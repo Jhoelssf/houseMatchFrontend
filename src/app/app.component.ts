@@ -3,13 +3,12 @@ import { PrimeNGConfig } from 'primeng/api';
 
 @Component({
     selector: 'app-root',
-    templateUrl: './app.component.html'
+    templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit {
-
-    constructor(private primengConfig: PrimeNGConfig) { }
+    constructor(private primengConfig: PrimeNGConfig) {}
 
     ngOnInit() {
-        this.primengConfig.ripple = true;
+        this.primengConfig.ripple = true; //enables core ripple functionality
     }
 }
