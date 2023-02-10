@@ -42,7 +42,7 @@ export class RoleDialogComponent implements OnInit {
         return this.formRole.get('selectedModule') as FormControl;
     }
 
-    constructor(public ref: DynamicDialogRef, public config: DynamicDialogConfig) {}
+    constructor(public dynamicDialogRef: DynamicDialogRef, public config: DynamicDialogConfig) {}
 
     ngOnInit(): void {
         this.cities = [
@@ -67,10 +67,10 @@ export class RoleDialogComponent implements OnInit {
     }
 
     onCloseDialog() {
-        this.ref.destroy();
+        this.dynamicDialogRef.destroy();
     }
 
     onSaveRole(response: any) {
-        this.ref.close(response);
+        this.dynamicDialogRef.close(response);
     }
 }

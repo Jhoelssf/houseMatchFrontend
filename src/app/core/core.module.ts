@@ -19,9 +19,10 @@ import { RoleDialogComponent } from './roles/role-dialog/role-dialog.component';
 import { RolesComponent } from './roles/roles.component';
 import { UsersComponent } from './users/users.component';
 import { ViewsComponent } from './views/views.component';
+import { UserDialogComponent } from './users/user-dialog/user-dialog.component';
 
 @NgModule({
-    declarations: [UsersComponent, ViewsComponent, RolesComponent, RoleDialogComponent],
+    declarations: [UsersComponent, ViewsComponent, RolesComponent, RoleDialogComponent, UserDialogComponent],
     imports: [
         CommonModule,
         CoreRoutingModule,

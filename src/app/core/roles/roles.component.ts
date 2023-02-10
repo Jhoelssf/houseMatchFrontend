@@ -3,10 +3,12 @@ import { MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Table } from 'primeng/table';
 import { Subject, takeUntil } from 'rxjs';
+import { Role } from '../../api/houseMatch.api';
 import { Customer, Representative } from '../../demo/api/customer';
 import { Product } from '../../demo/api/product';
 import { CustomerService } from '../../demo/service/customer.service';
 import { ProductService } from '../../demo/service/product.service';
+import { RoleServiceApi } from './api/role-service.service';
 import { RoleDialogComponent } from './role-dialog/role-dialog.component';
 interface expandedRows {
     [key: string]: boolean;
@@ -50,16 +52,22 @@ export class RolesComponent implements OnInit {
     display: boolean = false;
     ref: DynamicDialogRef = new DynamicDialogRef();
     unsubscribe$: Subject<any> = new Subject<any>();
+    roles: Role[] = [];
 
     @ViewChild('filter') filter!: ElementRef;
 
     constructor(
         private customerService: CustomerService,
         private productService: ProductService,
-        private dialogService: DialogService
+        private dialogService: DialogService,
+        private roleServiceApi: RoleServiceApi
     ) {}
 
     ngOnInit() {
+        this.roleServiceApi.getRoles();
+        this.roleServiceApi.roles$.pipe(takeUntil(this.unsubscribe$)).subscribe((roles) => {
+            this.roles = roles;
+        });
         this.customerService.getCustomersLarge().then((customers) => {
             this.customers1 = customers;
             this.loading = false;

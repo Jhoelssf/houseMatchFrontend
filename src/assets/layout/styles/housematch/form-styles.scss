@@ -1,6 +1,7 @@
-::ng-deep .p-select-vertical > .p-selectbutton > .p-buttonset {
+.p-select-vertical > .p-selectbutton .p-buttonset .p-component > .p-ripple .p-element .p-button .p-component {
     border-right: 1px solid rgb(48, 69, 98) !important;
 }
+
 .p-select-vertical > .p-selectbutton {
     flex-direction: column !important;
     justify-content: center !important;

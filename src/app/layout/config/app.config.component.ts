@@ -11,10 +11,7 @@ export class AppConfigComponent implements OnInit {
 
     scales: number[] = [12, 13, 14, 15, 16];
 
-    constructor(
-        public layoutService: LayoutService,
-        public menuService: MenuService
-    ) {}
+    constructor(public layoutService: LayoutService, public menuService: MenuService) {}
     ngOnInit(): void {
         this.changeTheme('vela-orange', 'dark');
     }
@@ -65,9 +62,7 @@ export class AppConfigComponent implements OnInit {
 
     changeTheme(theme: string, colorScheme: string) {
         const themeLink = <HTMLLinkElement>document.getElementById('theme-css');
-        const newHref = themeLink
-            .getAttribute('href')!
-            .replace(this.layoutService.config.theme, theme);
+        const newHref = themeLink.getAttribute('href')!.replace(this.layoutService.config.theme, theme);
         this.layoutService.config.colorScheme;
         this.replaceThemeLink(newHref, () => {
             this.layoutService.config.theme = theme;
@@ -84,10 +79,7 @@ export class AppConfigComponent implements OnInit {
         cloneLinkElement.setAttribute('href', href);
         cloneLinkElement.setAttribute('id', id + '-clone');
 
-        themeLink.parentNode!.insertBefore(
-            cloneLinkElement,
-            themeLink.nextSibling
-        );
+        themeLink.parentNode!.insertBefore(cloneLinkElement, themeLink.nextSibling);
 
         cloneLinkElement.addEventListener('load', () => {
             themeLink.remove();

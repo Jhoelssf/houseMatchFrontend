@@ -49,6 +49,11 @@ import { AppLayoutComponent } from './layout/app.layout.component';
                             path: 'core',
                             loadChildren: () => import('./core/core.module').then((m) => m.CoreModule),
                         },
+                        {
+                            path: 'house',
+                            loadChildren: () =>
+                                import('./house-match/house-match.module').then((m) => m.HouseMatchModule),
+                        },
                     ],
                 },
                 {

@@ -5,7 +5,9 @@
     </div>
     <div class="layout-main-container">
         <div class="layout-main">
-            <router-outlet></router-outlet>
+            <div style="height: 100%; max-height: calc(100vh - 12em); overflow: auto">
+                <router-outlet></router-outlet>
+            </div>
         </div>
         <app-footer></app-footer>
     </div>

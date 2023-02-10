@@ -24,6 +24,16 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Views', icon: 'pi pi-fw pi-desktop', routerLink: ['/core/views'] },
                 ],
             },
+            {
+                label: 'House Match',
+                items: [
+                    {
+                        label: 'Home',
+                        icon: 'pi pi-fw pi-home',
+                        routerLink: ['/house/home'],
+                    },
+                ],
+            },
             // {
             //     label: 'UI Components',
             //     items: [

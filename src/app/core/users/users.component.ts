@@ -1,11 +1,16 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { MessageService } from 'primeng/api';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Table } from 'primeng/table';
+import { Subject, takeUntil } from 'rxjs';
 import { Customer, Representative } from 'src/app/demo/api/customer';
+import { User } from '../../api/houseMatch.api';
 import { Product } from '../../demo/api/product';
 import { CountryService } from '../../demo/service/country.service';
 import { CustomerService } from '../../demo/service/customer.service';
 import { ProductService } from '../../demo/service/product.service';
+import { UserServiceApi } from './api/user-service.service';
+import { UserDialogComponent } from './user-dialog/user-dialog.component';
 
 interface expandedRows {
     [key: string]: boolean;
@@ -15,14 +20,17 @@ interface expandedRows {
     selector: 'app-users',
     templateUrl: './users.component.html',
     styleUrls: ['./users.component.scss'],
-    providers: [MessageService, ConfirmationService],
+    providers: [DialogService, MessageService],
+    // providers: [MessageService, ConfirmationService],
+    // changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UsersComponent implements OnInit {
+export class UsersComponent implements OnInit, OnDestroy {
     customers1: Customer[] = [];
 
     customers2: Customer[] = [];
 
     customers3: Customer[] = [];
+    customerExample: number[] = [];
 
     selectedCustomers1: Customer[] = [];
 
@@ -49,16 +57,30 @@ export class UsersComponent implements OnInit {
     selectedCountryAdvanced: any[] = [];
     filteredCountries: any[] = [];
     countries: any[] = [];
+    unsubscribe$: Subject<any> = new Subject();
+    users: User[] = [];
+    ref: DynamicDialogRef = new DynamicDialogRef();
 
     @ViewChild('filter') filter!: ElementRef;
 
     constructor(
         private customerService: CustomerService,
         private productService: ProductService,
-        private countryService: CountryService
+        private countryService: CountryService,
+        private userServiceApi: UserServiceApi,
+        private dialogService: DialogService
     ) {}
+    ngOnDestroy(): void {
+        this.unsubscribe$.next(null);
+        this.unsubscribe$.complete();
+    }
 
     ngOnInit() {
+        this.userServiceApi.users$.subscribe((users) => {
+            this.users = users;
+        });
+        this.userServiceApi.getUsers();
+        // Examples
         this.countryService.getCountries().then((countries) => {
             this.countries = countries;
         });
@@ -73,6 +95,11 @@ export class UsersComponent implements OnInit {
         });
         this.customerService.getCustomersMedium().then((customers) => (this.customers2 = customers));
         this.customerService.getCustomersLarge().then((customers) => (this.customers3 = customers));
+        let el = [];
+        for (let i = 0; i < 40; i++) {
+            el.push(i);
+        }
+        this.customerExample = el;
         this.productService.getProductsWithOrdersSmall().then((data) => (this.products = data));
 
         this.representatives = [
@@ -98,38 +125,38 @@ export class UsersComponent implements OnInit {
         ];
     }
 
-    onSort() {
-        this.updateRowGroupMetaData();
-    }
+    // onSort() {
+    //     this.updateRowGroupMetaData();
+    // }
 
-    updateRowGroupMetaData() {
-        this.rowGroupMetadata = {};
+    // updateRowGroupMetaData() {
+    //     this.rowGroupMetadata = {};
 
-        if (this.customers3) {
-            for (let i = 0; i < this.customers3.length; i++) {
-                const rowData = this.customers3[i];
-                const representativeName = rowData?.representative?.name || '';
+    //     if (this.customers3) {
+    //         for (let i = 0; i < this.customers3.length; i++) {
+    //             const rowData = this.customers3[i];
+    //             const representativeName = rowData?.representative?.name || '';
 
-                if (i === 0) {
-                    this.rowGroupMetadata[representativeName] = {
-                        index: 0,
-                        size: 1,
-                    };
-                } else {
-                    const previousRowData = this.customers3[i - 1];
-                    const previousRowGroup = previousRowData?.representative?.name;
-                    if (representativeName === previousRowGroup) {
-                        this.rowGroupMetadata[representativeName].size++;
-                    } else {
-                        this.rowGroupMetadata[representativeName] = {
-                            index: i,
-                            size: 1,
-                        };
-                    }
-                }
-            }
-        }
-    }
+    //             if (i === 0) {
+    //                 this.rowGroupMetadata[representativeName] = {
+    //                     index: 0,
+    //                     size: 1,
+    //                 };
+    //             } else {
+    //                 const previousRowData = this.customers3[i - 1];
+    //                 const previousRowGroup = previousRowData?.representative?.name;
+    //                 if (representativeName === previousRowGroup) {
+    //                     this.rowGroupMetadata[representativeName].size++;
+    //                 } else {
+    //                     this.rowGroupMetadata[representativeName] = {
+    //                         index: i,
+    //                         size: 1,
+    //                     };
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     expandAll() {
         if (!this.isExpanded) {
@@ -168,5 +195,25 @@ export class UsersComponent implements OnInit {
         }
 
         this.filteredCountries = filtered;
+    }
+
+    onOpenDialogRole(user?: any): void {
+        this.ref = this.dialogService.open(UserDialogComponent, {
+            header: `${user ? 'Actualizar' : 'Crear'} usuario`,
+            modal: true,
+            width: '80vw',
+            draggable: true,
+            resizable: true,
+            keepInViewport: true,
+            contentStyle: { 'max-height': '500px', overflow: 'auto' },
+            baseZIndex: 10000,
+        });
+        // this.ref.onDestroy.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {});
+
+        this.ref.onClose.pipe(takeUntil(this.unsubscribe$)).subscribe((message: string) => {
+            if (message === 'success') {
+                console.log('algo');
+            }
+        });
     }
 }
