@@ -19,9 +19,9 @@ export class AppMenuComponent implements OnInit {
             {
                 label: 'Administration',
                 items: [
-                    { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/core/users'] },
-                    { label: 'Roles', icon: 'pi pi-fw pi-th-large', routerLink: ['/core/roles'] },
-                    { label: 'Views', icon: 'pi pi-fw pi-desktop', routerLink: ['/core/views'] },
+                    { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/admin/core/users'] },
+                    { label: 'Roles', icon: 'pi pi-fw pi-th-large', routerLink: ['/admin/core/roles'] },
+                    { label: 'Views', icon: 'pi pi-fw pi-desktop', routerLink: ['/admin/core/views'] },
                 ],
             },
             {
@@ -30,7 +30,7 @@ export class AppMenuComponent implements OnInit {
                     {
                         label: 'Home',
                         icon: 'pi pi-fw pi-home',
-                        routerLink: ['/house/home'],
+                        routerLink: ['/home'],
                     },
                 ],
             },

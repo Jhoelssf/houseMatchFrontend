@@ -1,1 +1,47 @@
-<p>home works!</p>
+<div>
+    <div
+        style="
+            height: 20em;
+            width: 100%;
+            background-image: url('../../../assets/layout/images/crear-inmuebles-1.png');
+            background-position: center;
+            -webkit-background-size: cover;
+            -moz-background-size: cover;
+            -o-background-size: cover;
+            background-size: cover;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: end;
+        ">
+        <div style="position: absolute; top: 10%; left: 20px">
+            <div>
+                <h1>Tu decides como vender o comprar tu inmueble</h1>
+            </div>
+            <p style="font-size: 17px">Nuestra tecnologia y los mejores expertos del mercado lo harán por ti</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: center">
+            <p-selectButton [options]="buySellOpts" [(ngModel)]="selectedOpt" class="pb-2"></p-selectButton>
+            <div class="pb-5" style="width: 500px">
+                <p-dropdown
+                    [options]="propertyType"
+                    [style]="{ width: '50%' }"
+                    [(ngModel)]="selectedType"
+                    placeholder="Tipo de inmueble"></p-dropdown>
+                <p-autoComplete
+                    [style]="{ width: '50%' }"
+                    [(ngModel)]="locationValue"
+                    [suggestions]="filteredLocations"
+                    (completeMethod)="filterLocation($event)"
+                    field="name"
+                    [dropdown]="true">
+                </p-autoComplete>
+            </div>
+        </div>
+    </div>
+    <!-- Last properties section -->
+    <div class="py-4">
+        <h1 class="text-center">ULTIMAS PROPIEDADES</h1>
+    </div>
+</div>

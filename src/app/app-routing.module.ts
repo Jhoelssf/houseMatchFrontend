@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { NotfoundComponent } from './demo/components/notfound/notfound.component';
+import { LayoutHouseMatchComponent } from './house-match/layout-house-match/layout-house-match/layout-house-match.component';
 import { AppLayoutComponent } from './layout/app.layout.component';
 
 @NgModule({
@@ -9,6 +10,17 @@ import { AppLayoutComponent } from './layout/app.layout.component';
             [
                 {
                     path: '',
+                    component: LayoutHouseMatchComponent,
+                    children: [
+                        {
+                            path: '',
+                            loadChildren: () =>
+                                import('./house-match/house-match.module').then((m) => m.HouseMatchModule),
+                        },
+                    ],
+                },
+                {
+                    path: 'admin',
                     component: AppLayoutComponent,
                     children: [
                         {
@@ -48,11 +60,6 @@ import { AppLayoutComponent } from './layout/app.layout.component';
                         {
                             path: 'core',
                             loadChildren: () => import('./core/core.module').then((m) => m.CoreModule),
-                        },
-                        {
-                            path: 'house',
-                            loadChildren: () =>
-                                import('./house-match/house-match.module').then((m) => m.HouseMatchModule),
                         },
                     ],
                 },
