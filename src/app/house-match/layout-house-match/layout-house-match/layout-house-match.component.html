@@ -1,8 +1,8 @@
 <div class="layout-wrapper" [ngClass]="containerClass">
     <app-header-house-match></app-header-house-match>
     <div class="layout-main-container px-0 mx-0">
-        <div class="layout-main" style="width: 100%">
-            <div style="height: 100%; max-height: calc(100vh - 12em)">
+        <div class="layout-main">
+            <div style="height: 100%; max-height: calc(100vh - 12em); overflow: auto">
                 <router-outlet></router-outlet>
             </div>
         </div>
