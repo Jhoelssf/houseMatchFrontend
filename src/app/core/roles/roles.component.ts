@@ -64,10 +64,19 @@ export class RolesComponent implements OnInit {
     ) {}
 
     ngOnInit() {
-        this.roleServiceApi.getRoles();
         this.roleServiceApi.roles$.pipe(takeUntil(this.unsubscribe$)).subscribe((roles) => {
             this.roles = roles;
         });
+        this.roleServiceApi.createRole$.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {
+            this.roleServiceApi.getRoles();
+        });
+        this.roleServiceApi.updateRole$.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {
+            this.roleServiceApi.getRoles();
+        });
+        this.roleServiceApi.deleteRole$.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {
+            this.roleServiceApi.getRoles();
+        });
+        this.roleServiceApi.getRoles();
         this.customerService.getCustomersLarge().then((customers) => {
             this.customers1 = customers;
             this.loading = false;
@@ -118,12 +127,12 @@ export class RolesComponent implements OnInit {
             keepInViewport: true,
             contentStyle: { 'max-height': '500px', overflow: 'auto' },
             baseZIndex: 10000,
+            data: rol,
         });
         // this.ref.onDestroy.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {});
 
         this.ref.onClose.pipe(takeUntil(this.unsubscribe$)).subscribe((message: string) => {
             if (message === 'success') {
-                console.log('algo');
             }
         });
     }
@@ -182,5 +191,8 @@ export class RolesComponent implements OnInit {
     clear(table: Table) {
         table.clear();
         this.filter.nativeElement.value = '';
+    }
+    onDeleteRole(role: Role) {
+        role.id && this.roleServiceApi.deleteRole(role.id);
     }
 }

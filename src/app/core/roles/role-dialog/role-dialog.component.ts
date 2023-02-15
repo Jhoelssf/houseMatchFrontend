@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormArray, FormControl, FormGroup } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { Role, RoleInput } from '../../../api/houseMatch.api';
+import { RoleServiceApi } from '../api/role-service.service';
 
 @Component({
     selector: 'app-role-dialog',
@@ -19,6 +21,7 @@ export class RoleDialogComponent implements OnInit {
     });
     cities: any = [];
     modulesArray: any = [];
+    currentRole: Role;
 
     get name(): FormControl {
         return this.formRole.get('name') as FormControl;
@@ -42,9 +45,22 @@ export class RoleDialogComponent implements OnInit {
         return this.formRole.get('selectedModule') as FormControl;
     }
 
-    constructor(public dynamicDialogRef: DynamicDialogRef, public config: DynamicDialogConfig) {}
+    constructor(
+        public dynamicDialogRef: DynamicDialogRef,
+        public config: DynamicDialogConfig,
+        private roleServiceApi: RoleServiceApi
+    ) {
+        this.currentRole = config?.data;
+    }
 
     ngOnInit(): void {
+        if (this.currentRole) {
+            this.formRole.patchValue({
+                name: this.currentRole.name,
+                description: this.currentRole.description,
+                order: this.currentRole.order,
+            });
+        }
         this.cities = [
             { name: 'New York', code: 'NY' },
             { name: 'Rome', code: 'RM' },
@@ -71,6 +87,16 @@ export class RoleDialogComponent implements OnInit {
     }
 
     onSaveRole(response: any) {
+        const request: RoleInput = {
+            description: this.description.value,
+            name: this.name.value,
+            order: this.order.value,
+        };
+        if (this.currentRole) {
+            this.currentRole.id && this.roleServiceApi.updateRole(this.currentRole.id, request);
+        } else {
+            this.roleServiceApi.createRole(request);
+        }
         this.dynamicDialogRef.close(response);
     }
 }
