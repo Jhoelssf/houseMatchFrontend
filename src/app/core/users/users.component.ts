@@ -79,6 +79,21 @@ export class UsersComponent implements OnInit, OnDestroy {
         this.userServiceApi.users$.subscribe((users) => {
             this.users = users;
         });
+        this.userServiceApi.updateUser$.subscribe({
+            next: () => {
+                this.userServiceApi.getUsers();
+            },
+        });
+        this.userServiceApi.createUser$.subscribe({
+            next: () => {
+                this.userServiceApi.getUsers();
+            },
+        });
+        this.userServiceApi.deleteUser$.subscribe({
+            next: () => {
+                this.userServiceApi.getUsers();
+            },
+        });
         this.userServiceApi.getUsers();
         // Examples
         this.countryService.getCountries().then((countries) => {
@@ -197,7 +212,7 @@ export class UsersComponent implements OnInit, OnDestroy {
         this.filteredCountries = filtered;
     }
 
-    onOpenDialogRole(user?: any): void {
+    onOpenDialogUser(user?: User): void {
         this.ref = this.dialogService.open(UserDialogComponent, {
             header: `${user ? 'Actualizar' : 'Crear'} usuario`,
             modal: true,
@@ -207,13 +222,16 @@ export class UsersComponent implements OnInit, OnDestroy {
             keepInViewport: true,
             contentStyle: { 'max-height': '500px', overflow: 'auto' },
             baseZIndex: 10000,
+            data: user,
         });
         // this.ref.onDestroy.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {});
 
         this.ref.onClose.pipe(takeUntil(this.unsubscribe$)).subscribe((message: string) => {
             if (message === 'success') {
-                console.log('algo');
             }
         });
+    }
+    onDeleteUser(user: User) {
+        user.id && this.userServiceApi.deleteUser(user.id);
     }
 }

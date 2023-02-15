@@ -1,20 +1,22 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
-import { BoolOutput, HouseMatch, IdOutput, User, UserInput } from '../../../api/houseMatch.api';
+import { BoolOutput, HouseMatch, User, UserInput } from '../../../api/houseMatch.api';
 
 @Injectable({
     providedIn: 'root',
 })
 export class UserServiceApi {
     users$: Subject<User[] | any> = new Subject<User[] | any>();
+    usersError$: Subject<User[] | any> = new Subject<User[] | any>();
     updateUser$: Subject<BoolOutput | any> = new Subject<BoolOutput | any>();
     createUser$: Subject<User[] | any> = new Subject<User[] | any>();
     deleteUser$: Subject<BoolOutput | any> = new Subject<BoolOutput | any>();
     constructor(private houseMatchApi: HouseMatch) {}
 
     getUsers(): void {
-        this.houseMatchApi.getUsers().subscribe((users) => {
-            this.users$.next(users);
+        this.houseMatchApi.getUsers().subscribe({
+            next: (users) => this.users$.next(users),
+            error: (error) => this.usersError$.next(error),
         });
     }
     updateUser(id: string, body: UserInput): void {
@@ -22,7 +24,7 @@ export class UserServiceApi {
             this.updateUser$.next(users);
         });
     }
-    createUser(body: IdOutput): void {
+    createUser(body: any): void {
         this.houseMatchApi.createUser(body).subscribe((users) => {
             this.createUser$.next(users);
         });

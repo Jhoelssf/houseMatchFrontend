@@ -7,7 +7,7 @@
                 pButton
                 icon="pi pi-plus"
                 label="Add User"
-                (click)="onOpenDialogRole()"
+                (click)="onOpenDialogUser()"
                 class="p-button-outlined"></button>
         </div>
         <p-table
@@ -27,18 +27,37 @@
                     <th style="width: 200px">Email</th>
                     <th style="width: 200px">Roles</th>
                     <th style="width: 200px">Tema</th>
+                    <th style="width: 200px">Acciones</th>
                 </tr>
             </ng-template>
-            <ng-template pTemplate="body" let-customer>
+            <ng-template pTemplate="body" let-user>
                 <tr>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>3</td>
-                    <td>4</td>
-                    <td>5</td>
-                    <td>6</td>
-                    <td>7</td>
-                    <td>8</td>
+                    <td>{{ user.user }}</td>
+                    <td>{{ user.user }}</td>
+                    <td>{{ user.user }}</td>
+                    <td>{{ user.user }}</td>
+                    <td>{{ user.user }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.user }}</td>
+                    <td>{{ user.theme }}</td>
+                    <td>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                pButton
+                                pRipple
+                                (click)="onOpenDialogUser(user)"
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-rounded"></button>
+                            <button
+                                pButton
+                                pRipple
+                                type="button"
+                                (click)="onDeleteUser(user)"
+                                icon="pi pi-trash"
+                                class="p-button-rounded p-button-danger"></button>
+                        </div>
+                    </td>
                 </tr>
             </ng-template>
         </p-table>
