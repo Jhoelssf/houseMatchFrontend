@@ -16,6 +16,10 @@ const routes: Routes = [
         path: 'search',
         loadChildren: () => import('./searches/searches.module').then((m) => m.SearchesModule),
     },
+    {
+        path: 'agent',
+        loadChildren: () => import('./agent/agent.module').then((m) => m.AgentModule),
+    },
 ];
 
 @NgModule({
