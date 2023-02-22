@@ -1,15 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
-  selector: 'app-info-sell-buy',
-  templateUrl: './info-sell-buy.component.html',
-  styleUrls: ['./info-sell-buy.component.scss']
+    selector: 'app-info-sell-buy',
+    templateUrl: './info-sell-buy.component.html',
+    styleUrls: ['./info-sell-buy.component.scss'],
 })
-export class InfoSellBuyComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit(): void {
-  }
-
+export class InfoSellBuyComponent {
+    constructor() {}
 }
