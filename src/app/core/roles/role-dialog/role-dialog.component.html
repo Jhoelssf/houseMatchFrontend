@@ -1,0 +1,63 @@
+<div class="grid p-fluid mt-3" [formGroup]="formRole">
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="roleName" pInputText formControlName="name" />
+            <label for="roleName">Nombre</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="roleDescription" pInputText formControlName="description" />
+            <label for="roleDescription">Descripcíon</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-multiSelect
+                inputId="multiselect"
+                appendTo="body"
+                [options]="cities"
+                formControlName="modules"
+                optionLabel="name"
+                [filter]="false"></p-multiSelect>
+            <label for="multiselect">MultiSelect</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="roleOrder" formControlName="order">
+            </p-inputNumber>
+            <label for="roleOrder">Orden</label>
+        </span>
+    </div>
+    <div class="flex flex-wrap justify-content-between col-12">
+        <div class="md:col-6 sm:col-12">
+            <p-selectButton
+                class="p-select-vertical"
+                [options]="modulesArray"
+                optionLabel="name"
+                formControlName="selectedModule"></p-selectButton>
+        </div>
+        <div class="md:col-6 sm:col-12">
+            <ng-container
+                *ngFor="let role of viewsFormArray.controls; let iRole = index"
+                formArrayName="viewsFormArray">
+                <ng-container class="col-12" [formGroupName]="iRole">
+                    <div class="col-12">
+                        <div class="field-checkbox">
+                            <p-checkbox
+                                name="group1"
+                                value="New York"
+                                formControlName="fromControlExample"
+                                id="ny"></p-checkbox>
+                            <label for="ny">New York</label>
+                        </div>
+                    </div>
+                </ng-container>
+            </ng-container>
+        </div>
+    </div>
+</div>
+<app-footer-dialog
+    (clickPrimaryButton)="onSaveRole('success')"
+    (clickSecondaryButton)="onCloseDialog()"></app-footer-dialog>

@@ -1,0 +1,29 @@
+<div class="grid p-fluid mt-3" [formGroup]="formUser">
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="Username" pInputText formControlName="username" />
+            <label for="Username">Username</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="password" id="Password" pInputText formControlName="password" />
+            <label for="Password">Password</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="email" id="Email" pInputText formControlName="email" />
+            <label for="Email">Email</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="Tema" pInputText formControlName="theme" />
+            <label for="Tema">Tema</label>
+        </span>
+    </div>
+</div>
+<app-footer-dialog
+    (clickPrimaryButton)="onSaveUser('success')"
+    (clickSecondaryButton)="onCloseDialog()"></app-footer-dialog>

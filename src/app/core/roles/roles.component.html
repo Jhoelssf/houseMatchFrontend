@@ -1,0 +1,59 @@
+<div class="col-12">
+    <div class="card">
+        <div>
+            <button
+                pButton
+                icon="pi pi-plus"
+                label="Add User"
+                (click)="onOpenDialogRole()"
+                class="p-button-outlined"></button>
+        </div>
+        <p-table
+            [value]="roles"
+            scrollDirection="both"
+            [scrollable]="true"
+            scrollHeight="100%"
+            styleClass="mt-3"
+            responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 200px">#</th>
+                    <th style="width: 200px">Nombre</th>
+                    <th style="width: 200px">Descripción</th>
+                    <th style="width: 200px">Orden</th>
+                    <th style="width: 200px" pFrozenColumn alignFrozen="right">Acciones</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-role let-i="rowIndex">
+                <tr>
+                    <td style="width: 200px" alignFrozen="left">
+                        {{ i + 1 }}
+                    </td>
+                    <td style="width: 200px">
+                        <span class="image-text ml-2">{{ role.name }}</span>
+                    </td>
+                    <td style="width: 200px">{{ role.description }}</td>
+                    <td style="width: 200px">{{ role.order }}</td>
+                    <td style="width: 200px">
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                pButton
+                                pRipple
+                                (click)="onOpenDialogRole(role)"
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-rounded"></button>
+                            <button
+                                pButton
+                                pRipple
+                                (click)="onDeleteRole(role)"
+                                type="button"
+                                icon="pi pi-trash"
+                                class="p-button-rounded p-button-danger"></button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>
