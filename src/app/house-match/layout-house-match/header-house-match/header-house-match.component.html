@@ -19,9 +19,21 @@
         #topbarmenu
         class="layout-topbar-menu menu-housematch"
         [ngClass]="{ 'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible }">
-        <button pButton pRipple type="button" label="Home" class="p-button-text mx-2"></button>
-        <button pButton pRipple type="button" label="Inmuebles" class="p-button-text mx-2"></button>
-        <button pButton pRipple type="button" label="Soy agente" class="p-button-text mx-2"></button>
+        <button pButton pRipple type="button" [routerLink]="['/home']" label="Home" class="p-button-text mx-2"></button>
+        <button
+            pButton
+            pRipple
+            type="button"
+            [routerLink]="['/search']"
+            label="Inmuebles"
+            class="p-button-text mx-2"></button>
+        <button
+            pButton
+            pRipple
+            type="button"
+            [routerLink]="['/agent']"
+            label="Soy agente"
+            class="p-button-text mx-2"></button>
         <!-- <button class="p-link layout-topbar-button">
             <i class="pi pi-calendar"></i>
             <span>Calendar</span>

@@ -1,15 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
-  selector: 'app-info-page-agent',
-  templateUrl: './info-page-agent.component.html',
-  styleUrls: ['./info-page-agent.component.scss']
+    selector: 'app-info-page-agent',
+    templateUrl: './info-page-agent.component.html',
+    styleUrls: ['./info-page-agent.component.scss'],
 })
-export class InfoPageAgentComponent implements OnInit {
-
-  constructor() { }
-
-  ngOnInit(): void {
-  }
-
+export class InfoPageAgentComponent {
+    constructor() {}
 }
