@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-import { filter, Subscription } from 'rxjs';
+import { Subscription, filter } from 'rxjs';
 import { AppSidebarComponent } from '../../../layout/app.sidebar.component';
 import { AppTopBarComponent } from '../../../layout/app.topbar.component';
 import { LayoutService } from '../../../layout/service/app.layout.service';
@@ -63,7 +63,8 @@ export class LayoutHouseMatchComponent implements OnDestroy, OnInit {
         });
     }
     ngOnInit(): void {
-        this.changeTheme('vela-orange', 'dark');
+        console.log('');
+        // this.changeTheme('vela-blue', 'dark');
     }
     changeTheme(theme: string, colorScheme: string) {
         const themeLink = <HTMLLinkElement>document.getElementById('theme-css');

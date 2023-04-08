@@ -1,15 +1,15 @@
 <div class="col-12">
-    <div class="card">
+    <div [class.card]="true">
         <div>
             <button
                 pButton
                 icon="pi pi-plus"
-                label="Añadir rol"
-                (click)="onOpenDialogRole()"
+                label="Añadir modulo"
+                (click)="onOpenDialogModule()"
                 class="p-button-outlined"></button>
         </div>
         <p-table
-            [value]="roles"
+            [value]="modules"
             scrollDirection="both"
             [scrollable]="true"
             scrollHeight="100%"
@@ -20,33 +20,35 @@
                     <th style="width: 200px">#</th>
                     <th style="width: 200px">Nombre</th>
                     <th style="width: 200px">Descripción</th>
+                    <th style="width: 200px">Icono</th>
                     <th style="width: 200px">Orden</th>
                     <th style="width: 200px" pFrozenColumn alignFrozen="right">Acciones</th>
                 </tr>
             </ng-template>
-            <ng-template pTemplate="body" let-role let-i="rowIndex">
+            <ng-template pTemplate="body" let-module let-i="rowIndex">
                 <tr>
                     <td style="width: 200px" alignFrozen="left">
                         {{ i + 1 }}
                     </td>
                     <td style="width: 200px">
-                        <span class="image-text ml-2">{{ role.name }}</span>
+                        <span class="image-text ml-2">{{ module.name }}</span>
                     </td>
-                    <td style="width: 200px">{{ role.description }}</td>
-                    <td style="width: 200px">{{ role.order }}</td>
+                    <td style="width: 200px">{{ module.description }}</td>
+                    <td style="width: 200px">{{ module.icon }}</td>
+                    <td style="width: 200px">{{ module.order }}</td>
                     <td style="width: 200px">
                         <div class="flex flex-wrap gap-2">
                             <button
                                 pButton
                                 pRipple
-                                (click)="onOpenDialogRole(role)"
+                                (click)="onOpenDialogModule(module)"
                                 type="button"
                                 icon="pi pi-pencil"
                                 class="p-button-rounded"></button>
                             <button
                                 pButton
                                 pRipple
-                                (click)="onDeleteRole(role)"
+                                (click)="onDeleteModule(module)"
                                 type="button"
                                 icon="pi pi-trash"
                                 class="p-button-rounded p-button-danger"></button>

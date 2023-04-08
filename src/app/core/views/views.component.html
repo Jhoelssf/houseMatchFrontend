@@ -1,1 +1,95 @@
-<p>views works!</p>
+<div class="col-12">
+    <div class="card">
+        <div [formGroup]="filterForm">
+            <div class="flex">
+                <div>
+                    <h5>Modulos</h5>
+                    <p-dropdown
+                        class="filter-modules"
+                        [options]="modules"
+                        placeholder="Selecciona modulo"
+                        [showClear]="true"
+                        optionLabel="name"
+                        formControlName="moduleSelect"
+                        optionValue="id"></p-dropdown>
+                </div>
+                <div>
+                    <h5>Roles</h5>
+                    <p-dropdown
+                        class="filter-modules"
+                        [options]="roles"
+                        placeholder="Selecciona rol"
+                        [showClear]="true"
+                        optionLabel="name"
+                        formControlName="rolSelect"
+                        optionValue="id"></p-dropdown>
+                </div>
+            </div>
+            <div class="flex">
+                <button
+                    pButton
+                    icon="pi pi-plus"
+                    label="Agregar vista"
+                    (click)="onOpenDialogView()"
+                    class="p-button-outlined"></button>
+                <button
+                    pButton
+                    icon="pi pi-plus"
+                    label="Asignar vistaa un rol"
+                    (click)="onAssignViewToRole()"
+                    class="p-button-outlined"></button>
+            </div>
+        </div>
+        <p-table
+            [value]="views"
+            scrollDirection="both"
+            [scrollable]="true"
+            scrollHeight="100%"
+            styleClass="mt-3"
+            responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 200px">#</th>
+                    <th style="width: 200px">Nombre</th>
+                    <th style="width: 200px">Descripción</th>
+                    <th style="width: 200px">Url</th>
+                    <th style="width: 200px">Icon</th>
+                    <th style="width: 200px">Module</th>
+                    <th style="width: 200px" pFrozenColumn alignFrozen="right">Acciones</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-view let-i="rowIndex">
+                <tr>
+                    <td style="width: 200px" alignFrozen="left">
+                        {{ i + 1 }}
+                    </td>
+                    <td style="width: 200px">
+                        <span class="image-text ml-2">{{ view.name }}</span>
+                    </td>
+                    <td style="width: 200px">{{ view.description }}</td>
+                    <td style="width: 200px">{{ view.url }}</td>
+                    <td style="width: 200px">{{ view.icon }}</td>
+                    <td style="width: 200px">{{ view.module.name }}</td>
+                    <td style="width: 200px">
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                pButton
+                                pRipple
+                                (click)="onOpenDialogView(view)"
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-rounded"></button>
+                            <button
+                                pButton
+                                pRipple
+                                (click)="onDeleteView(view)"
+                                type="button"
+                                icon="pi pi-trash"
+                                class="p-button-rounded p-button-danger"></button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>

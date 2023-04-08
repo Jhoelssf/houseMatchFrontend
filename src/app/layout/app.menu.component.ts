@@ -22,6 +22,7 @@ export class AppMenuComponent implements OnInit {
                     { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/admin/core/users'] },
                     { label: 'Roles', icon: 'pi pi-fw pi-th-large', routerLink: ['/admin/core/roles'] },
                     { label: 'Views', icon: 'pi pi-fw pi-desktop', routerLink: ['/admin/core/views'] },
+                    { label: 'Modules', icon: 'pi pi-fw pi-check-square', routerLink: ['/admin/core/modules'] },
                 ],
             },
             {

@@ -13,7 +13,7 @@ export class AppConfigComponent implements OnInit {
 
     constructor(public layoutService: LayoutService, public menuService: MenuService) {}
     ngOnInit(): void {
-        this.changeTheme('vela-orange', 'dark');
+        this.changeTheme('vela-blue', 'dark');
     }
 
     get visible(): boolean {

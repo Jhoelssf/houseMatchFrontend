@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { FormArray, FormControl, FormGroup } from '@angular/forms';
-import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { Role, RoleInput } from '../../../api/houseMatch.api';
-import { RoleServiceApi } from '../api/role-service.service';
+import { Component, OnInit } from '@angular/core'
+import { FormArray, FormControl, FormGroup } from '@angular/forms'
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog'
+import { Role, RoleInput } from '../../../api/houseMatch.api'
+import { RoleServiceApi } from '../api/role-service.service'
 
 @Component({
     selector: 'app-role-dialog',

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Table } from 'primeng/table';
@@ -20,7 +20,7 @@ interface expandedRows {
     styleUrls: ['./roles.component.scss'],
     providers: [DialogService, MessageService],
 })
-export class RolesComponent implements OnInit {
+export class RolesComponent implements OnInit, OnDestroy {
     customers1: Customer[] = [];
 
     customers2: Customer[] = [];
@@ -62,6 +62,10 @@ export class RolesComponent implements OnInit {
         private dialogService: DialogService,
         private roleServiceApi: RoleServiceApi
     ) {}
+    ngOnDestroy(): void {
+        this.unsubscribe$.next(null);
+        this.unsubscribe$.complete();
+    }
 
     ngOnInit() {
         this.roleServiceApi.roles$.pipe(takeUntil(this.unsubscribe$)).subscribe((roles) => {

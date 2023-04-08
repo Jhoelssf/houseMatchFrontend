@@ -1,0 +1,29 @@
+<div class="grid p-fluid mt-3" [formGroup]="assignViewForm">
+    <div *ngIf="assignViewData.unassignedViews">
+        <h5>Vistas pendientes de asignacion</h5>
+        <p-dropdown
+            [options]="assignViewData.unassignedViews"
+            placeholder="Selecciona vista"
+            [showClear]="true"
+            optionLabel="name"
+            formControlName="unassignedView"
+            optionValue="id"></p-dropdown>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="viewOrder" formControlName="order">
+            </p-inputNumber>
+            <label for="viewOrder">Orden</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="viewPosition" formControlName="position">
+            </p-inputNumber>
+            <label for="viewPosition">Posicion de la vista</label>
+        </span>
+    </div>
+</div>
+<app-footer-dialog
+    (clickPrimaryButton)="onAssignViewToRol()"
+    (clickSecondaryButton)="onCloseDialog()"></app-footer-dialog>

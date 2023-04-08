@@ -1,0 +1,34 @@
+<div class="grid p-fluid mt-3" [formGroup]="formView">
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="viewName" pInputText formControlName="name" />
+            <label for="viewName">Nombre</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="viewDescription" pInputText formControlName="description" />
+            <label for="viewDescription">Descripcíon</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="viewIcon" pInputText formControlName="icon" />
+            <label for="viewIcon">Icon</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="viewUrl" pInputText formControlName="url" />
+            <label for="viewUrl">Url</label>
+        </span>
+    </div>
+    <!-- <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="viewOrder" formControlName="order">
+            </p-inputNumber>
+            <label for="viewOrder">Orden</label>
+        </span>
+    </div> -->
+</div>
+<app-footer-dialog (clickPrimaryButton)="onSaveView()" (clickSecondaryButton)="onCloseDialog()"></app-footer-dialog>

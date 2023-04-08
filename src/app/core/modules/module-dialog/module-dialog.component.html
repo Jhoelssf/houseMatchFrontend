@@ -1,0 +1,30 @@
+<div class="grid p-fluid mt-3" [formGroup]="formModule">
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="moduleName" pInputText formControlName="name" />
+            <label for="moduleName">Nombre</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="moduleDescription" pInputText formControlName="description" />
+            <label for="moduleDescription">Descripcíon</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="moduleIcon" pInputText formControlName="icon" />
+            <label for="moduleIcon">Icon</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="moduleOrder" formControlName="order">
+            </p-inputNumber>
+            <label for="moduleOrder">Orden</label>
+        </span>
+    </div>
+</div>
+<app-footer-dialog
+    (clickPrimaryButton)="onSaveModule('success')"
+    (clickSecondaryButton)="onCloseDialog()"></app-footer-dialog>

@@ -4,12 +4,13 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Table } from 'primeng/table';
 import { Subject, takeUntil } from 'rxjs';
 import { Customer, Representative } from 'src/app/demo/api/customer';
-import { User } from '../../api/houseMatch.api';
+import { Location, User, UserSecondLevel } from '../../api/houseMatch.api';
 import { Product } from '../../demo/api/product';
 import { CountryService } from '../../demo/service/country.service';
 import { CustomerService } from '../../demo/service/customer.service';
 import { ProductService } from '../../demo/service/product.service';
 import { UserServiceApi } from './api/user-service.service';
+import { IUserDialog } from './models/data-dialog';
 import { UserDialogComponent } from './user-dialog/user-dialog.component';
 
 interface expandedRows {
@@ -58,7 +59,8 @@ export class UsersComponent implements OnInit, OnDestroy {
     filteredCountries: any[] = [];
     countries: any[] = [];
     unsubscribe$: Subject<any> = new Subject();
-    users: User[] = [];
+    users: UserSecondLevel[] = [];
+    locations: Location[] = [];
     ref: DynamicDialogRef = new DynamicDialogRef();
 
     @ViewChild('filter') filter!: ElementRef;
@@ -94,7 +96,13 @@ export class UsersComponent implements OnInit, OnDestroy {
                 this.userServiceApi.getUsers();
             },
         });
+        this.userServiceApi.locations$.subscribe({
+            next: (locations) => {
+                this.locations = locations ?? [];
+            },
+        });
         this.userServiceApi.getUsers();
+        this.userServiceApi.locations();
         // Examples
         this.countryService.getCountries().then((countries) => {
             this.countries = countries;
@@ -212,17 +220,29 @@ export class UsersComponent implements OnInit, OnDestroy {
         this.filteredCountries = filtered;
     }
 
-    onOpenDialogUser(user?: User): void {
+    onOpenDialogUser(userSecondLevel?: UserSecondLevel): void {
+        const userDialogData: IUserDialog = {
+            user: {
+                id: userSecondLevel?.id,
+                person_id: userSecondLevel?.person?.id,
+                user: userSecondLevel?.user,
+                password: userSecondLevel?.password,
+                email: userSecondLevel?.email,
+                theme: userSecondLevel?.theme,
+            },
+            location: this.locations?.find((l) => l.id === userSecondLevel?.person?.location_id),
+            person: userSecondLevel?.person,
+        };
         this.ref = this.dialogService.open(UserDialogComponent, {
-            header: `${user ? 'Actualizar' : 'Crear'} usuario`,
+            header: `${userSecondLevel ? 'Actualizar' : 'Crear'} usuario`,
             modal: true,
             width: '80vw',
             draggable: true,
             resizable: true,
             keepInViewport: true,
-            contentStyle: { 'max-height': '500px', overflow: 'auto' },
+            contentStyle: { 'max-height': '70vh', overflow: 'auto' },
             baseZIndex: 10000,
-            data: user,
+            data: userDialogData,
         });
         // this.ref.onDestroy.pipe(takeUntil(this.unsubscribe$)).subscribe(() => {});
 

@@ -13,20 +13,37 @@ import { TableModule } from 'primeng/table';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { FloatlabelDemoRoutingModule } from '../demo/components/uikit/floatlabel/floatlabeldemo-routing.module';
 
+import { CalendarModule } from 'primeng/calendar';
+import { DropdownModule } from 'primeng/dropdown';
 import { SharedModule } from '../shared/shared.module';
 import { CoreRoutingModule } from './core-routing.module';
+import { ModuleDialogComponent } from './modules/module-dialog/module-dialog.component';
+import { ModulesComponent } from './modules/modules.component';
 import { RoleDialogComponent } from './roles/role-dialog/role-dialog.component';
 import { RolesComponent } from './roles/roles.component';
-import { UsersComponent } from './users/users.component';
-import { ViewsComponent } from './views/views.component';
 import { UserDialogComponent } from './users/user-dialog/user-dialog.component';
+import { UsersComponent } from './users/users.component';
+import { ViewDialogComponent } from './views/view-dialog/view-dialog.component';
+import { ViewsComponent } from './views/views.component';
+import { AssignViewToRolComponent } from './views/assign-view-to-rol/assign-view-to-rol.component';
 
 @NgModule({
-    declarations: [UsersComponent, ViewsComponent, RolesComponent, RoleDialogComponent, UserDialogComponent],
+    declarations: [
+        UsersComponent,
+        ViewsComponent,
+        RolesComponent,
+        RoleDialogComponent,
+        UserDialogComponent,
+        ViewDialogComponent,
+        ModulesComponent,
+        ModuleDialogComponent,
+        AssignViewToRolComponent,
+    ],
     imports: [
         CommonModule,
         CoreRoutingModule,
         ButtonModule,
+        DropdownModule,
         DialogModule,
         ToggleButtonModule,
         TableModule,
@@ -36,6 +53,7 @@ import { UserDialogComponent } from './users/user-dialog/user-dialog.component';
         MultiSelectModule,
         InputTextModule,
         ReactiveFormsModule,
+        CalendarModule,
         InputNumberModule,
         SharedModule,
         CheckboxModule,

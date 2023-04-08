@@ -13,24 +13,12 @@
     </div>
     <div class="field col-12 md:col-6 sm:col-12">
         <span class="p-float-label">
-            <p-multiSelect
-                inputId="multiselect"
-                appendTo="body"
-                [options]="cities"
-                formControlName="modules"
-                optionLabel="name"
-                [filter]="false"></p-multiSelect>
-            <label for="multiselect">MultiSelect</label>
-        </span>
-    </div>
-    <div class="field col-12 md:col-6 sm:col-12">
-        <span class="p-float-label">
             <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="roleOrder" formControlName="order">
             </p-inputNumber>
             <label for="roleOrder">Orden</label>
         </span>
     </div>
-    <div class="flex flex-wrap justify-content-between col-12">
+    <!-- <div class="flex flex-wrap justify-content-between col-12">
         <div class="md:col-6 sm:col-12">
             <p-selectButton
                 class="p-select-vertical"
@@ -56,7 +44,7 @@
                 </ng-container>
             </ng-container>
         </div>
-    </div>
+    </div> -->
 </div>
 <app-footer-dialog
     (clickPrimaryButton)="onSaveRole('success')"

@@ -1,0 +1,30 @@
+<div class="grid">
+    <div class="col-12">
+        <h5>Fotografia</h5>
+        <ng-container *ngIf="!basic; else basicForm">
+            <p-fileUpload
+                name="demo[]"
+                url="./upload.php"
+                (onUpload)="onUpload($event)"
+                [multiple]="true"
+                accept="image/*"
+                [maxFileSize]="1000000">
+                <ng-template pTemplate="content">
+                    <ul *ngIf="uploadedFiles.length">
+                        <li *ngFor="let file of uploadedFiles">{{ file.name }} - {{ file.size }} bytes</li>
+                    </ul>
+                </ng-template>
+            </p-fileUpload>
+        </ng-container>
+
+        <ng-template #basicForm>
+            <p-fileUpload
+                mode="basic"
+                name="demo[]"
+                url="./upload.php"
+                accept="image/*"
+                [maxFileSize]="1000000"
+                (onUpload)="onBasicUpload()"></p-fileUpload>
+        </ng-template>
+    </div>
+</div>

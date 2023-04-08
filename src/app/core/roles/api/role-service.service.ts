@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
-import { BoolOutput, HouseMatch, IdOutput, Role, RoleInput } from '../../../api/houseMatch.api';
+import { BoolOutput, HouseMatch, IdOutput, Role, RoleInput, RoleViewInput } from '../../../api/houseMatch.api';
 
 @Injectable({
     providedIn: 'root',
@@ -10,6 +10,7 @@ export class RoleServiceApi {
     updateRole$: Subject<BoolOutput | any> = new Subject<BoolOutput | any>();
     createRole$: Subject<IdOutput | any> = new Subject<IdOutput | any>();
     deleteRole$: Subject<BoolOutput | any> = new Subject<BoolOutput | any>();
+    roleView$: Subject<IdOutput | any> = new Subject<IdOutput | any>();
     constructor(private houseMatchApi: HouseMatch) {}
 
     getRoles(): void {
@@ -30,6 +31,11 @@ export class RoleServiceApi {
     deleteRole(id: string): void {
         this.houseMatchApi.deleteRole(id).subscribe((role) => {
             this.deleteRole$.next(role);
+        });
+    }
+    assignRoleToView(request: RoleViewInput): void {
+        this.houseMatchApi.assignmentRoleView(request).subscribe((role) => {
+            this.roleView$.next(role);
         });
     }
 }
