@@ -1,13 +1,13 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { Subject, takeUntil } from 'rxjs';
-import { Module, Role, RoleView, View, ViewSecondLevel } from '../../api/houseMatch.api';
-import { ViewsServiceApi } from './api/api-views.service';
-import { AssignViewToRolComponent } from './assign-view-to-rol/assign-view-to-rol.component';
-import { IAddView, IAssignView } from './models/view.model';
-import { ViewDialogComponent } from './view-dialog/view-dialog.component';
+import { Component, OnDestroy, OnInit } from '@angular/core'
+import { FormControl, FormGroup } from '@angular/forms'
+import { MessageService } from 'primeng/api'
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog'
+import { Subject, takeUntil } from 'rxjs'
+import { Module, Role, RoleView, View, ViewSecondLevel } from '../../api/houseMatch.api'
+import { ViewsServiceApi } from './api/api-views.service'
+import { AssignViewToRolComponent } from './assign-view-to-rol/assign-view-to-rol.component'
+import { IAddView, IAssignView } from './models/view.model'
+import { ViewDialogComponent } from './view-dialog/view-dialog.component'
 
 @Component({
     selector: 'app-views',
@@ -57,7 +57,7 @@ export class ViewsComponent implements OnInit, OnDestroy {
         });
         this.viewsServiceApi.modules$.pipe(takeUntil(this.unsubscribe$)).subscribe((modules) => {
             this.modules = modules ?? [];
-            this.moduleSelect.setValue(this.modules[0]?.id);
+            // this.moduleSelect.setValue(this.modules[0]?.id);
         });
         this.viewsServiceApi.getViews();
         this.viewsServiceApi.getModules();

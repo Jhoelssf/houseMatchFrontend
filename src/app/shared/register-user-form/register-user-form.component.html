@@ -1,0 +1,129 @@
+<div class="grid p-fluid mt-3" [formGroup]="formPersonLocationUser">
+    <div [formGroup]="formPerson" class="col-12 grid p-fluid">
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="document_type" pInputText formControlName="document_type" />
+                <label for="document_type">Tipo de documento</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="document" pInputText formControlName="document" />
+                <label for="document">Documento</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="names" pInputText formControlName="names" />
+                <label for="names">Nombres</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="lastname" pInputText formControlName="lastname" />
+                <label for="lastname">Apellido paterno</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="m_lastname" pInputText formControlName="m_lastname" />
+                <label for="m_lastname">Apellido materno</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="phone" pInputText formControlName="phone" />
+                <label for="phone">Telefono</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="gender" pInputText formControlName="gender" />
+                <label for="gender">Genero</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="marital_status" pInputText formControlName="marital_status" />
+                <label for="marital_status">Estado civil</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <p-calendar [showIcon]="true" inputId="icon" formControlName="date_birth"></p-calendar>
+        </div>
+
+        <div class="field col-12 md:col-12 sm:col-12">
+            <app-one-file-select></app-one-file-select>
+        </div>
+    </div>
+    <div [formGroup]="formLocation" class="col-12 grid p-fluid">
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="country" pInputText formControlName="country" />
+                <label for="country">Pais</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="city" pInputText formControlName="city" />
+                <label for="city">Ciudad</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="province" pInputText formControlName="province" />
+                <label for="province">Provincia</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="district" pInputText formControlName="district" />
+                <label for="district">Distrito</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="address" pInputText formControlName="address" />
+                <label for="address">Direccion</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <p-inputNumber inputId="latInput" formControlName="lat"></p-inputNumber>
+                <label for="latInput">lat</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <p-inputNumber inputId="longInput" formControlName="long"></p-inputNumber>
+                <label for="longInput">long</label>
+            </span>
+        </div>
+    </div>
+    <div [formGroup]="formUser" class="col-12 grid p-fluid">
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="Username" pInputText formControlName="username" />
+                <label for="Username">Username</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="password" id="Password" pInputText formControlName="password" />
+                <label for="Password">Password</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="email" id="Email" pInputText formControlName="email" />
+                <label for="Email">Email</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="Tema" pInputText formControlName="theme" />
+                <label for="Tema">Tema</label>
+            </span>
+        </div>
+    </div>
+</div>

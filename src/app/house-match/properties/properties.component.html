@@ -1,0 +1,61 @@
+<div class="col-12">
+    <div [class.card]="true">
+        <div>
+            <button
+                pButton
+                icon="pi pi-plus"
+                label="Añadir modulo"
+                (click)="onOpenDialogProperty()"
+                class="p-button-outlined"></button>
+        </div>
+        <p-table
+            [value]="properties"
+            scrollDirection="both"
+            [scrollable]="true"
+            scrollHeight="100%"
+            styleClass="mt-3"
+            responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 200px">#</th>
+                    <th style="width: 200px">Nombre</th>
+                    <th style="width: 200px">Descripción</th>
+                    <th style="width: 200px">Icono</th>
+                    <th style="width: 200px">Orden</th>
+                    <th style="width: 200px" pFrozenColumn alignFrozen="right">Acciones</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-property let-i="rowIndex">
+                <tr>
+                    <td style="width: 200px" alignFrozen="left">
+                        {{ i + 1 }}
+                    </td>
+                    <td style="width: 200px">
+                        <span class="image-text ml-2">{{ property.name }}</span>
+                    </td>
+                    <td style="width: 200px">{{ property.description }}</td>
+                    <td style="width: 200px">{{ property.icon }}</td>
+                    <td style="width: 200px">{{ property.order }}</td>
+                    <td style="width: 200px">
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                pButton
+                                pRipple
+                                (click)="onOpenDialogProperty(property)"
+                                type="button"
+                                icon="pi pi-pencil"
+                                class="p-button-rounded"></button>
+                            <button
+                                pButton
+                                pRipple
+                                (click)="onDeleteproperty(property)"
+                                type="button"
+                                icon="pi pi-trash"
+                                class="p-button-rounded p-button-danger"></button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>

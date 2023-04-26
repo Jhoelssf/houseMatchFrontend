@@ -23,9 +23,9 @@ import { RoleDialogComponent } from './roles/role-dialog/role-dialog.component';
 import { RolesComponent } from './roles/roles.component';
 import { UserDialogComponent } from './users/user-dialog/user-dialog.component';
 import { UsersComponent } from './users/users.component';
+import { AssignViewToRolComponent } from './views/assign-view-to-rol/assign-view-to-rol.component';
 import { ViewDialogComponent } from './views/view-dialog/view-dialog.component';
 import { ViewsComponent } from './views/views.component';
-import { AssignViewToRolComponent } from './views/assign-view-to-rol/assign-view-to-rol.component';
 
 @NgModule({
     declarations: [
@@ -40,6 +40,7 @@ import { AssignViewToRolComponent } from './views/assign-view-to-rol/assign-view
         AssignViewToRolComponent,
     ],
     imports: [
+        SharedModule,
         CommonModule,
         CoreRoutingModule,
         ButtonModule,
@@ -55,7 +56,6 @@ import { AssignViewToRolComponent } from './views/assign-view-to-rol/assign-view
         ReactiveFormsModule,
         CalendarModule,
         InputNumberModule,
-        SharedModule,
         CheckboxModule,
         SelectButtonModule,
     ],

@@ -20,6 +20,10 @@ const routes: Routes = [
         path: 'agent',
         loadChildren: () => import('./agent/agent.module').then((m) => m.AgentModule),
     },
+    {
+        path: 'my-properties',
+        loadChildren: () => import('./agent/agent.module').then((m) => m.AgentModule),
+    },
 ];
 
 @NgModule({
