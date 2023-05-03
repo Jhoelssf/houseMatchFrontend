@@ -22,7 +22,7 @@ const routes: Routes = [
     },
     {
         path: 'my-properties',
-        loadChildren: () => import('./agent/agent.module').then((m) => m.AgentModule),
+        loadChildren: () => import('./properties/properties.module').then((m) => m.PropertiesModule),
     },
 ];
 

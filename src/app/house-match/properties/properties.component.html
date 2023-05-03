@@ -4,7 +4,7 @@
             <button
                 pButton
                 icon="pi pi-plus"
-                label="Añadir modulo"
+                label="Añadir propiedad"
                 (click)="onOpenDialogProperty()"
                 class="p-button-outlined"></button>
         </div>
@@ -18,10 +18,23 @@
             <ng-template pTemplate="header">
                 <tr>
                     <th style="width: 200px">#</th>
-                    <th style="width: 200px">Nombre</th>
-                    <th style="width: 200px">Descripción</th>
-                    <th style="width: 200px">Icono</th>
-                    <th style="width: 200px">Orden</th>
+                    <th style="width: 200px">Tipo</th>
+                    <th style="width: 200px">Descripcion</th>
+                    <th style="width: 200px">Usuario</th>
+                    <th style="width: 200px">Ubicacion</th>
+                    <th style="width: 200px">Tamaño</th>
+                    <th style="width: 200px">Ancho</th>
+                    <th style="width: 200px">Area</th>
+                    <th style="width: 200px">Piso</th>
+                    <th style="width: 200px">pisos</th>
+                    <th style="width: 200px">Cuartos</th>
+                    <th style="width: 200px">Baños</th>
+                    <th style="width: 200px">Patio</th>
+                    <th style="width: 200px">Terraza</th>
+                    <th style="width: 200px">Sala</th>
+                    <th style="width: 200px">Lavanderia</th>
+                    <th style="width: 200px">Cocina</th>
+                    <th style="width: 200px">Garage</th>
                     <th style="width: 200px" pFrozenColumn alignFrozen="right">Acciones</th>
                 </tr>
             </ng-template>
@@ -30,14 +43,25 @@
                     <td style="width: 200px" alignFrozen="left">
                         {{ i + 1 }}
                     </td>
-                    <td style="width: 200px">
-                        <span class="image-text ml-2">{{ property.name }}</span>
-                    </td>
+                    <td style="width: 200px">{{ property.type }}</td>
                     <td style="width: 200px">{{ property.description }}</td>
-                    <td style="width: 200px">{{ property.icon }}</td>
-                    <td style="width: 200px">{{ property.order }}</td>
-                    <td style="width: 200px">
-                        <div class="flex flex-wrap gap-2">
+                    <td style="width: 200px">{{ property.user_id }}</td>
+                    <td style="width: 200px">{{ property.location_id }}</td>
+                    <td style="width: 200px">{{ property.length }}</td>
+                    <td style="width: 200px">{{ property.width }}</td>
+                    <td style="width: 200px">{{ property.area }}</td>
+                    <td style="width: 200px">{{ property.floor }}</td>
+                    <td style="width: 200px">{{ property.number_of_floor }}</td>
+                    <td style="width: 200px">{{ property.rooms }}</td>
+                    <td style="width: 200px">{{ property.bathrooms }}</td>
+                    <td style="width: 200px">{{ property.yard }}</td>
+                    <td style="width: 200px">{{ property.terrace }}</td>
+                    <td style="width: 200px">{{ property.living_room }}</td>
+                    <td style="width: 200px">{{ property.laundry_room }}</td>
+                    <td style="width: 200px">{{ property.kitchen }}</td>
+                    <td style="width: 200px">{{ property.garage }}</td>
+                    <td pFrozenColumn alignFrozen="right">
+                        <div class="flex gap-2">
                             <button
                                 pButton
                                 pRipple
@@ -58,4 +82,22 @@
             </ng-template>
         </p-table>
     </div>
+</div>
+<div class="col-12">
+    <h3 style="font-weight: normal">Transacciones</h3>
+    <p-pickList
+        [source]="noSellingProperties"
+        [target]="currentSellingProperties"
+        sourceHeader="Mis propiedades sin vender"
+        targetHeader="Propiedades en venta"
+        [dragdrop]="true"
+        (onMoveToTarget)="onMoveToTarget($event)"
+        (onMoveAllToTarget)="onMoveToTarget($event)"
+        [responsive]="true"
+        [sourceStyle]="{ height: '250px' }"
+        [targetStyle]="{ height: '250px' }">
+        <ng-template let-property pTemplate="item">
+            <div>{{ property.description }}</div>
+        </ng-template>
+    </p-pickList>
 </div>

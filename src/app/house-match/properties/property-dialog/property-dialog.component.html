@@ -1,0 +1,138 @@
+<div class="grid p-fluid mt-3" [formGroup]="formProperty">
+    <div class="field col-12 md:col-6 sm:col-12">
+        <h5>Tipo de propiedad</h5>
+        <div class="flex">
+            <div class="field-radiobutton mr-3">
+                <p-radioButton name="type" value="house" formControlName="type" id="typeHouse"></p-radioButton>
+                <label for="typeHouse">Casa</label>
+            </div>
+            <div class="field-radiobutton">
+                <p-radioButton name="type" value="apartment" formControlName="type" id="typeApartment"></p-radioButton>
+                <label for="typeApartment">Departamento</label>
+            </div>
+        </div>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <input type="text" id="propertyDescription" pInputText formControlName="description" />
+            <label for="propertyDescription">Descripcion</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="length" formControlName="length">
+            </p-inputNumber>
+            <label for="length">Tamaño</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="width" formControlName="width">
+            </p-inputNumber>
+            <label for="width">Ancho</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="area" formControlName="area">
+            </p-inputNumber>
+            <label for="area">Area</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="floor" formControlName="floor">
+            </p-inputNumber>
+            <label for="floor">Piso</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber
+                mode="decimal"
+                [showButtons]="false"
+                [min]="0"
+                id="number_of_floor"
+                formControlName="number_of_floor">
+            </p-inputNumber>
+            <label for="number_of_floor">Numero de pisos</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="rooms" formControlName="rooms">
+            </p-inputNumber>
+            <label for="rooms">Cuartos</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="bathrooms" formControlName="bathrooms">
+            </p-inputNumber>
+            <label for="bathrooms">Baños</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="patio" formControlName="yard">
+            </p-inputNumber>
+            <label for="patio">Patio</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="terrace" formControlName="terrace">
+            </p-inputNumber>
+            <label for="terrace">Terraza</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber
+                mode="decimal"
+                [showButtons]="false"
+                [min]="0"
+                id="living_room"
+                formControlName="living_room">
+            </p-inputNumber>
+            <label for="living_room">Sala</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber
+                mode="decimal"
+                [showButtons]="false"
+                [min]="0"
+                id="laundry_room"
+                formControlName="laundry_room">
+            </p-inputNumber>
+            <label for="laundry_room">Lavanderia</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="kitchen" formControlName="kitchen">
+            </p-inputNumber>
+            <label for="kitchen">Cocina</label>
+        </span>
+    </div>
+    <div class="field col-12 md:col-6 sm:col-12">
+        <span class="p-float-label">
+            <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="garage" formControlName="garage">
+            </p-inputNumber>
+            <label for="garage">Garage</label>
+        </span>
+    </div>
+</div>
+<app-footer-dialog
+    (clickPrimaryButton)="onSaveProperty('success')"
+    (clickSecondaryButton)="onDismissDialog()"></app-footer-dialog>
+
+<!-- <div class="field col-12 md:col-6 sm:col-12">
+    <span class="p-float-label">
+        <p-inputNumber mode="decimal" [showButtons]="false" [min]="0" id="propertyOrder" formControlName="order">
+        </p-inputNumber>
+        <label for="propertyOrder">Orden</label>
+    </span>
+</div> -->
