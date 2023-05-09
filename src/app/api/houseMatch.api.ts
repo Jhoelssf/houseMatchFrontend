@@ -102,17 +102,17 @@ export interface IHouseMatch {
      * User Role list
      * @return OK
      */
-    getUser2(userId: string, roleId: string): Observable<UserRole>;
+    getUserRole(userId: string, roleId: string): Observable<UserRole>;
     /**
      * User Role update
      * @return OK
      */
-    assignmentUser(userId: string, roleId: string): Observable<AssignedBoolOutput>;
+    postUserRole(userId: string, roleId: string): Observable<AssignedBoolOutput>;
     /**
      * User delete
      * @return OK
      */
-    deleteUser2(userId: string, roleId: string): Observable<BoolOutput>;
+    deleteUserRole(userId: string, roleId: string): Observable<BoolOutput>;
     /**
      * Role list
      * @return OK
@@ -161,12 +161,12 @@ export interface IHouseMatch {
      * User Role list
      * @return OK
      */
-    getUser3(roleId: string, viewID: string): Observable<UserRole>;
+    getRoleViewDetail(roleID: string, viewID: string): Observable<UserRole>;
     /**
      * User delete
      * @return OK
      */
-    deleteUser3(roleId: string, viewID: string): Observable<BoolOutput>;
+    deleteRoleViewDetail(roleID: string, viewID: string): Observable<BoolOutput>;
     /**
      * Module list
      * @return OK
@@ -225,7 +225,7 @@ export interface IHouseMatch {
      * Properties list
      * @return OK
      */
-    getProperties(): Observable<Property[]>;
+    getProperties(): Observable<PropertySecondLevel[]>;
     /**
      * Create Property
      * @param body Cuerpo del mensaje para crear el property.
@@ -236,7 +236,7 @@ export interface IHouseMatch {
      * Property list
      * @return OK
      */
-    getProperty(id: string): Observable<Property>;
+    getProperty(id: string): Observable<PropertySecondLevel>;
     /**
      * Property update
      * @param body Cuerpo del mensaje para actualizar el property.
@@ -262,6 +262,11 @@ export interface IHouseMatch {
      * @return OK
      */
     updateCompleteProperty(id: string, body: PropertyLocationUpdateInput, medias_ids?: string | undefined): Observable<BoolOutput>;
+    /**
+     * Property list
+     * @return OK
+     */
+    getPropertyUserId(id: string): Observable<PropertySecondLevel[]>;
     /**
      * Location list
      * @return OK
@@ -291,9 +296,20 @@ export interface IHouseMatch {
     deleteLocation(id: string): Observable<BoolOutput>;
     /**
      * Transaction list
+     * @param typeProperty (optional) Tipo de propiedad
+     * @param rooms (optional) numero de habitaciones
+     * @param bathrooms (optional) numero de bathrooms
+     * @param minArea (optional) minimo de area
+     * @param maxArea (optional) maximo de area
+     * @param typeTransaction (optional) Tipo de transaccion
+     * @param maxCost (optional) maximo costo
+     * @param minCost (optional) minimo costo
+     * @param country (optional) pais
+     * @param province (optional) provincia
+     * @param district (optional) distrito
      * @return OK
      */
-    getTransactions(): Observable<TransactionSecondLevel[]>;
+    getTransactions(typeProperty?: string | undefined, rooms?: number | undefined, bathrooms?: number | undefined, minArea?: number | undefined, maxArea?: number | undefined, typeTransaction?: string | undefined, maxCost?: number | undefined, minCost?: number | undefined, country?: string | undefined, province?: string | undefined, district?: string | undefined): Observable<TransactionThirdLevel[]>;
     /**
      * Create Transaction
      * @param body Cuerpo del mensaje para crear el Transaction.
@@ -316,6 +332,11 @@ export interface IHouseMatch {
      * @return OK
      */
     deleteTransaction(id: string): Observable<BoolOutput>;
+    /**
+     * Transaction list
+     * @return OK
+     */
+    getTransactionByUser(id: string): Observable<TransactionSecondLevel[]>;
 }
 
 @Injectable({
@@ -1444,7 +1465,7 @@ export class HouseMatch implements IHouseMatch {
      * User Role list
      * @return OK
      */
-    getUser2(userId: string, roleId: string, httpContext?: HttpContext): Observable<UserRole> {
+    getUserRole(userId: string, roleId: string, httpContext?: HttpContext): Observable<UserRole> {
         let url_ = this.baseUrl + "/userRole/user/{userId}/role/{roleId}";
         if (userId === undefined || userId === null)
             throw new Error("The parameter 'userId' must be defined.");
@@ -1464,11 +1485,11 @@ export class HouseMatch implements IHouseMatch {
         };
 
         return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetUser2(response_);
+            return this.processGetUserRole(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processGetUser2(response_ as any);
+                    return this.processGetUserRole(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<UserRole>;
                 }
@@ -1477,7 +1498,7 @@ export class HouseMatch implements IHouseMatch {
         }));
     }
 
-    protected processGetUser2(response: HttpResponseBase): Observable<UserRole> {
+    protected processGetUserRole(response: HttpResponseBase): Observable<UserRole> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1520,7 +1541,7 @@ export class HouseMatch implements IHouseMatch {
      * User Role update
      * @return OK
      */
-    assignmentUser(userId: string, roleId: string, httpContext?: HttpContext): Observable<AssignedBoolOutput> {
+    postUserRole(userId: string, roleId: string, httpContext?: HttpContext): Observable<AssignedBoolOutput> {
         let url_ = this.baseUrl + "/userRole/user/{userId}/role/{roleId}";
         if (userId === undefined || userId === null)
             throw new Error("The parameter 'userId' must be defined.");
@@ -1540,11 +1561,11 @@ export class HouseMatch implements IHouseMatch {
         };
 
         return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processAssignmentUser(response_);
+            return this.processPostUserRole(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processAssignmentUser(response_ as any);
+                    return this.processPostUserRole(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<AssignedBoolOutput>;
                 }
@@ -1553,7 +1574,7 @@ export class HouseMatch implements IHouseMatch {
         }));
     }
 
-    protected processAssignmentUser(response: HttpResponseBase): Observable<AssignedBoolOutput> {
+    protected processPostUserRole(response: HttpResponseBase): Observable<AssignedBoolOutput> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1596,7 +1617,7 @@ export class HouseMatch implements IHouseMatch {
      * User delete
      * @return OK
      */
-    deleteUser2(userId: string, roleId: string, httpContext?: HttpContext): Observable<BoolOutput> {
+    deleteUserRole(userId: string, roleId: string, httpContext?: HttpContext): Observable<BoolOutput> {
         let url_ = this.baseUrl + "/userRole/user/{userId}/role/{roleId}";
         if (userId === undefined || userId === null)
             throw new Error("The parameter 'userId' must be defined.");
@@ -1616,11 +1637,11 @@ export class HouseMatch implements IHouseMatch {
         };
 
         return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteUser2(response_);
+            return this.processDeleteUserRole(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processDeleteUser2(response_ as any);
+                    return this.processDeleteUserRole(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<BoolOutput>;
                 }
@@ -1629,7 +1650,7 @@ export class HouseMatch implements IHouseMatch {
         }));
     }
 
-    protected processDeleteUser2(response: HttpResponseBase): Observable<BoolOutput> {
+    protected processDeleteUserRole(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2261,11 +2282,11 @@ export class HouseMatch implements IHouseMatch {
      * User Role list
      * @return OK
      */
-    getUser3(roleId: string, viewID: string, httpContext?: HttpContext): Observable<UserRole> {
+    getRoleViewDetail(roleID: string, viewID: string, httpContext?: HttpContext): Observable<UserRole> {
         let url_ = this.baseUrl + "/roleView/role/{roleID}/view/{viewID}";
-        if (roleId === undefined || roleId === null)
-            throw new Error("The parameter 'roleId' must be defined.");
-        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
+        if (roleID === undefined || roleID === null)
+            throw new Error("The parameter 'roleID' must be defined.");
+        url_ = url_.replace("{roleID}", encodeURIComponent("" + roleID));
         if (viewID === undefined || viewID === null)
             throw new Error("The parameter 'viewID' must be defined.");
         url_ = url_.replace("{viewID}", encodeURIComponent("" + viewID));
@@ -2281,11 +2302,11 @@ export class HouseMatch implements IHouseMatch {
         };
 
         return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetUser3(response_);
+            return this.processGetRoleViewDetail(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processGetUser3(response_ as any);
+                    return this.processGetRoleViewDetail(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<UserRole>;
                 }
@@ -2294,7 +2315,7 @@ export class HouseMatch implements IHouseMatch {
         }));
     }
 
-    protected processGetUser3(response: HttpResponseBase): Observable<UserRole> {
+    protected processGetRoleViewDetail(response: HttpResponseBase): Observable<UserRole> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2337,11 +2358,11 @@ export class HouseMatch implements IHouseMatch {
      * User delete
      * @return OK
      */
-    deleteUser3(roleId: string, viewID: string, httpContext?: HttpContext): Observable<BoolOutput> {
+    deleteRoleViewDetail(roleID: string, viewID: string, httpContext?: HttpContext): Observable<BoolOutput> {
         let url_ = this.baseUrl + "/roleView/role/{roleID}/view/{viewID}";
-        if (roleId === undefined || roleId === null)
-            throw new Error("The parameter 'roleId' must be defined.");
-        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
+        if (roleID === undefined || roleID === null)
+            throw new Error("The parameter 'roleID' must be defined.");
+        url_ = url_.replace("{roleID}", encodeURIComponent("" + roleID));
         if (viewID === undefined || viewID === null)
             throw new Error("The parameter 'viewID' must be defined.");
         url_ = url_.replace("{viewID}", encodeURIComponent("" + viewID));
@@ -2357,11 +2378,11 @@ export class HouseMatch implements IHouseMatch {
         };
 
         return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteUser3(response_);
+            return this.processDeleteRoleViewDetail(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processDeleteUser3(response_ as any);
+                    return this.processDeleteRoleViewDetail(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<BoolOutput>;
                 }
@@ -2370,7 +2391,7 @@ export class HouseMatch implements IHouseMatch {
         }));
     }
 
-    protected processDeleteUser3(response: HttpResponseBase): Observable<BoolOutput> {
+    protected processDeleteRoleViewDetail(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -3151,7 +3172,7 @@ export class HouseMatch implements IHouseMatch {
      * Properties list
      * @return OK
      */
-    getProperties(httpContext?: HttpContext): Observable<Property[]> {
+    getProperties(httpContext?: HttpContext): Observable<PropertySecondLevel[]> {
         let url_ = this.baseUrl + "/properties";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -3171,14 +3192,14 @@ export class HouseMatch implements IHouseMatch {
                 try {
                     return this.processGetProperties(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<Property[]>;
+                    return _observableThrow(e) as any as Observable<PropertySecondLevel[]>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<Property[]>;
+                return _observableThrow(response_) as any as Observable<PropertySecondLevel[]>;
         }));
     }
 
-    protected processGetProperties(response: HttpResponseBase): Observable<Property[]> {
+    protected processGetProperties(response: HttpResponseBase): Observable<PropertySecondLevel[]> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -3188,7 +3209,7 @@ export class HouseMatch implements IHouseMatch {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Property[];
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel[];
             return _observableOf(result200);
             }));
         } else if (status === 400) {
@@ -3296,7 +3317,7 @@ export class HouseMatch implements IHouseMatch {
      * Property list
      * @return OK
      */
-    getProperty(id: string, httpContext?: HttpContext): Observable<Property> {
+    getProperty(id: string, httpContext?: HttpContext): Observable<PropertySecondLevel> {
         let url_ = this.baseUrl + "/properties/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
@@ -3319,14 +3340,14 @@ export class HouseMatch implements IHouseMatch {
                 try {
                     return this.processGetProperty(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<Property>;
+                    return _observableThrow(e) as any as Observable<PropertySecondLevel>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<Property>;
+                return _observableThrow(response_) as any as Observable<PropertySecondLevel>;
         }));
     }
 
-    protected processGetProperty(response: HttpResponseBase): Observable<Property> {
+    protected processGetProperty(response: HttpResponseBase): Observable<PropertySecondLevel> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -3336,7 +3357,7 @@ export class HouseMatch implements IHouseMatch {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Property;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel;
             return _observableOf(result200);
             }));
         } else if (status === 400) {
@@ -3651,6 +3672,79 @@ export class HouseMatch implements IHouseMatch {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
+            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 422) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result422: any = null;
+            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
+            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
+            }));
+        } else if (status === 500) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result500: any = null;
+            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
+            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * Property list
+     * @return OK
+     */
+    getPropertyUserId(id: string, httpContext?: HttpContext): Observable<PropertySecondLevel[]> {
+        let url_ = this.baseUrl + "/properties/user/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            context: httpContext,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetPropertyUserId(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetPropertyUserId(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PropertySecondLevel[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PropertySecondLevel[]>;
+        }));
+    }
+
+    protected processGetPropertyUserId(response: HttpResponseBase): Observable<PropertySecondLevel[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel[];
             return _observableOf(result200);
             }));
         } else if (status === 400) {
@@ -4050,10 +4144,65 @@ export class HouseMatch implements IHouseMatch {
 
     /**
      * Transaction list
+     * @param typeProperty (optional) Tipo de propiedad
+     * @param rooms (optional) numero de habitaciones
+     * @param bathrooms (optional) numero de bathrooms
+     * @param minArea (optional) minimo de area
+     * @param maxArea (optional) maximo de area
+     * @param typeTransaction (optional) Tipo de transaccion
+     * @param maxCost (optional) maximo costo
+     * @param minCost (optional) minimo costo
+     * @param country (optional) pais
+     * @param province (optional) provincia
+     * @param district (optional) distrito
      * @return OK
      */
-    getTransactions(httpContext?: HttpContext): Observable<TransactionSecondLevel[]> {
-        let url_ = this.baseUrl + "/transactions";
+    getTransactions(typeProperty?: string | undefined, rooms?: number | undefined, bathrooms?: number | undefined, minArea?: number | undefined, maxArea?: number | undefined, typeTransaction?: string | undefined, maxCost?: number | undefined, minCost?: number | undefined, country?: string | undefined, province?: string | undefined, district?: string | undefined, httpContext?: HttpContext): Observable<TransactionThirdLevel[]> {
+        let url_ = this.baseUrl + "/transactions?";
+        if (typeProperty === null)
+            throw new Error("The parameter 'typeProperty' cannot be null.");
+        else if (typeProperty !== undefined)
+            url_ += "typeProperty=" + encodeURIComponent("" + typeProperty) + "&";
+        if (rooms === null)
+            throw new Error("The parameter 'rooms' cannot be null.");
+        else if (rooms !== undefined)
+            url_ += "rooms=" + encodeURIComponent("" + rooms) + "&";
+        if (bathrooms === null)
+            throw new Error("The parameter 'bathrooms' cannot be null.");
+        else if (bathrooms !== undefined)
+            url_ += "bathrooms=" + encodeURIComponent("" + bathrooms) + "&";
+        if (minArea === null)
+            throw new Error("The parameter 'minArea' cannot be null.");
+        else if (minArea !== undefined)
+            url_ += "minArea=" + encodeURIComponent("" + minArea) + "&";
+        if (maxArea === null)
+            throw new Error("The parameter 'maxArea' cannot be null.");
+        else if (maxArea !== undefined)
+            url_ += "maxArea=" + encodeURIComponent("" + maxArea) + "&";
+        if (typeTransaction === null)
+            throw new Error("The parameter 'typeTransaction' cannot be null.");
+        else if (typeTransaction !== undefined)
+            url_ += "typeTransaction=" + encodeURIComponent("" + typeTransaction) + "&";
+        if (maxCost === null)
+            throw new Error("The parameter 'maxCost' cannot be null.");
+        else if (maxCost !== undefined)
+            url_ += "maxCost=" + encodeURIComponent("" + maxCost) + "&";
+        if (minCost === null)
+            throw new Error("The parameter 'minCost' cannot be null.");
+        else if (minCost !== undefined)
+            url_ += "minCost=" + encodeURIComponent("" + minCost) + "&";
+        if (country === null)
+            throw new Error("The parameter 'country' cannot be null.");
+        else if (country !== undefined)
+            url_ += "country=" + encodeURIComponent("" + country) + "&";
+        if (province === null)
+            throw new Error("The parameter 'province' cannot be null.");
+        else if (province !== undefined)
+            url_ += "province=" + encodeURIComponent("" + province) + "&";
+        if (district === null)
+            throw new Error("The parameter 'district' cannot be null.");
+        else if (district !== undefined)
+            url_ += "district=" + encodeURIComponent("" + district) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -4072,14 +4221,14 @@ export class HouseMatch implements IHouseMatch {
                 try {
                     return this.processGetTransactions(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<TransactionSecondLevel[]>;
+                    return _observableThrow(e) as any as Observable<TransactionThirdLevel[]>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<TransactionSecondLevel[]>;
+                return _observableThrow(response_) as any as Observable<TransactionThirdLevel[]>;
         }));
     }
 
-    protected processGetTransactions(response: HttpResponseBase): Observable<TransactionSecondLevel[]> {
+    protected processGetTransactions(response: HttpResponseBase): Observable<TransactionThirdLevel[]> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -4089,7 +4238,7 @@ export class HouseMatch implements IHouseMatch {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TransactionSecondLevel[];
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TransactionThirdLevel[];
             return _observableOf(result200);
             }));
         } else if (status === 400) {
@@ -4390,6 +4539,79 @@ export class HouseMatch implements IHouseMatch {
             let result204: any = null;
             result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
             return _observableOf(result204);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
+            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 422) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result422: any = null;
+            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
+            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
+            }));
+        } else if (status === 500) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result500: any = null;
+            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
+            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * Transaction list
+     * @return OK
+     */
+    getTransactionByUser(id: string, httpContext?: HttpContext): Observable<TransactionSecondLevel[]> {
+        let url_ = this.baseUrl + "/transactions/user/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            context: httpContext,
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTransactionByUser(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTransactionByUser(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TransactionSecondLevel[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TransactionSecondLevel[]>;
+        }));
+    }
+
+    protected processGetTransactionByUser(response: HttpResponseBase): Observable<TransactionSecondLevel[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TransactionSecondLevel[];
+            return _observableOf(result200);
             }));
         } else if (status === 400) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -4839,6 +5061,85 @@ export interface Property {
     [key: string]: any;
 }
 
+export interface PropertySecondLevel {
+    /** id del property. */
+    id?: string;
+    user?: User;
+    location?: Location;
+    /** description del property. */
+    description?: string;
+    /** type del property */
+    type?: string;
+    /** length del property */
+    length?: number;
+    /** width del property */
+    width?: number;
+    /** area del property */
+    area?: number;
+    /** floor del property */
+    floor?: number;
+    /** number of floors del property */
+    number_of_floor?: number;
+    /** number of rooms del property */
+    rooms?: number;
+    /** number of bathrooms del property */
+    bathrooms?: number;
+    /** number of yard del property */
+    yard?: number;
+    /** number of terrace del property */
+    terrace?: number;
+    /** number of living_room del property */
+    living_room?: number;
+    /** number of laundry_room del property */
+    laundry_room?: number;
+    /** number of kitchen del property */
+    kitchen?: number;
+    /** number of garage del property */
+    garage?: number;
+
+    [key: string]: any;
+}
+
+export interface PropertyWithoutUserSecondLevel {
+    /** id del property. */
+    id?: string;
+    /** id del usuario. */
+    user_id?: string;
+    location?: Location;
+    /** description del property. */
+    description?: string;
+    /** type del property */
+    type?: string;
+    /** length del property */
+    length?: number;
+    /** width del property */
+    width?: number;
+    /** area del property */
+    area?: number;
+    /** floor del property */
+    floor?: number;
+    /** number of floors del property */
+    number_of_floor?: number;
+    /** number of rooms del property */
+    rooms?: number;
+    /** number of bathrooms del property */
+    bathrooms?: number;
+    /** number of yard del property */
+    yard?: number;
+    /** number of terrace del property */
+    terrace?: number;
+    /** number of living_room del property */
+    living_room?: number;
+    /** number of laundry_room del property */
+    laundry_room?: number;
+    /** number of kitchen del property */
+    kitchen?: number;
+    /** number of garage del property */
+    garage?: number;
+
+    [key: string]: any;
+}
+
 export interface PropertyInput {
     /** id del usuario. */
     user_id?: string;
@@ -4940,6 +5241,32 @@ export interface TransactionSecondLevel {
     /** id del transaction. */
     id?: string;
     property?: Property;
+    /** cost del transaction. */
+    cost?: number;
+    /** currency del transaction. */
+    currency?: string;
+    /** date_vip del transaction */
+    date_vip?: string;
+    /** date_post del transaction */
+    date_post?: string;
+    /** date_update del transaction */
+    date_update?: string;
+    /** available del transaction */
+    available?: boolean;
+    /** type del transaction */
+    type?: string;
+    /** date_start del transaction */
+    date_start?: string;
+    /** date_end del transaction */
+    date_end?: string;
+
+    [key: string]: any;
+}
+
+export interface TransactionThirdLevel {
+    /** id del transaction. */
+    id?: string;
+    property?: PropertyWithoutUserSecondLevel;
     /** cost del transaction. */
     cost?: number;
     /** currency del transaction. */

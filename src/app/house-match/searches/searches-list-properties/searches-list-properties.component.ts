@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { SelectItem } from 'primeng/api';
 import { DataView } from 'primeng/dataview';
+import { TransactionThirdLevel } from '../../../api/houseMatch.api';
 import { Product } from '../../../demo/api/product';
 import { ProductService } from '../../../demo/service/product.service';
+import { TransactionsApiService } from '../../../shared/services/transactions-api.service';
 
 @Component({
     selector: 'app-searches-list-properties',
@@ -11,12 +13,16 @@ import { ProductService } from '../../../demo/service/product.service';
 })
 export class SearchesListPropertiesComponent implements OnInit {
     products: Product[] = [];
+    transactions: TransactionThirdLevel[] = [];
     sortField: string = '';
     sortOrder: number = 0;
     sortOptions: SelectItem[] = [];
 
-    constructor(private productService: ProductService) {}
+    constructor(private productService: ProductService, private transactionsApiService: TransactionsApiService) {}
     ngOnInit(): void {
+        this.transactionsApiService.transactionsFilter$.subscribe((res) => {
+            this.transactions = res;
+        });
         this.productService.getProducts().then((data) => (this.products = data));
         this.sortOptions = [
             { label: 'Price High to Low', value: '!price' },

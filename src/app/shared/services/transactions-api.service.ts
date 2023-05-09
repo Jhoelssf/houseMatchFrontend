@@ -6,20 +6,55 @@ import {
     IdOutput,
     TransactionInput,
     TransactionSecondLevel,
-} from '../../../api/houseMatch.api';
+    TransactionThirdLevel,
+} from '../../api/houseMatch.api';
+import { TransactionFilterInput } from './api.model';
 
 @Injectable({
     providedIn: 'root',
 })
 export class TransactionsApiService {
+    transactionsFilter$: Subject<TransactionThirdLevel[] | any> = new Subject<TransactionThirdLevel[] | any>();
     transactions$: Subject<TransactionSecondLevel[] | any> = new Subject<TransactionSecondLevel[] | any>();
     updateTransaction$: Subject<BoolOutput | any> = new Subject<BoolOutput | any>();
     createTransaction$: Subject<IdOutput | any> = new Subject<IdOutput | any>();
     deleteTransaction$: Subject<BoolOutput | any> = new Subject<BoolOutput | any>();
     constructor(private houseMatchApi: HouseMatch) {}
 
-    getTransactions(): void {
-        this.houseMatchApi.getTransactions().subscribe((Transactions) => {
+    getTransactionsFilter(input: TransactionFilterInput): void {
+        const {
+            typeProperty,
+            rooms,
+            bathrooms,
+            minArea,
+            maxArea,
+            typeTransaction,
+            maxCost,
+            minCost,
+            country,
+            province,
+            district,
+        } = input;
+        this.houseMatchApi
+            .getTransactions(
+                typeProperty,
+                rooms,
+                bathrooms,
+                minArea,
+                maxArea,
+                typeTransaction,
+                maxCost,
+                minCost,
+                country,
+                province,
+                district
+            )
+            .subscribe((transactionsFilter) => {
+                this.transactionsFilter$.next(transactionsFilter);
+            });
+    }
+    getTransactions(userId: string): void {
+        this.houseMatchApi.getTransactionByUser(userId).subscribe((Transactions) => {
             this.transactions$.next(Transactions);
         });
     }

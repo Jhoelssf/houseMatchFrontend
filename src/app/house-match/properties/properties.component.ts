@@ -3,8 +3,9 @@ import { MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { Property, TransactionInput } from '../../api/houseMatch.api';
+import { ECurrency, ETransactionType } from '../../shared/services/transaction.model';
+import { TransactionsApiService } from '../../shared/services/transactions-api.service';
 import { PropertyApiService } from './api/property-api.service';
-import { TransactionsApiService } from './api/transactions-api.service';
 import { PropertyDialogComponent } from './property-dialog/property-dialog.component';
 
 @Component({
@@ -65,12 +66,12 @@ export class PropertiesComponent implements OnInit, OnDestroy {
             const transaction: TransactionInput = {
                 property_id: curItem.id,
                 cost: 4,
-                currency: 'Soles',
+                currency: ECurrency.SOLES,
                 date_vip: new Date().toISOString(),
                 date_post: new Date().toISOString(),
                 date_update: new Date().toISOString(),
                 available: true,
-                type: 'casa',
+                type: ETransactionType.SALE,
                 date_start: new Date().toISOString(),
                 date_end: new Date().toISOString(),
             };
