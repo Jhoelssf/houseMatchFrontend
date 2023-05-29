@@ -47,7 +47,7 @@ export class PropertiesComponent implements OnInit, OnDestroy {
         this.ref = this.dialogService.open(PropertyDialogComponent, {
             header: `${property ? 'Actualizar' : 'Crear'} propiedad`,
             modal: true,
-            width: '50vw',
+            width: '70vw',
             draggable: true,
             resizable: true,
             keepInViewport: true,

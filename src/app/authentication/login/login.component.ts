@@ -39,7 +39,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.unsubscribe$.complete();
     }
     ngOnInit(): void {
-        this.authApiService.login$.pipe(takeUntil(this.unsubscribe$)).subscribe((token) => {
+        this.authApiService.currentUser$.pipe(takeUntil(this.unsubscribe$)).subscribe((token) => {
             console.log(token);
         });
     }

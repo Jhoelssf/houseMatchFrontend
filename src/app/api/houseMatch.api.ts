@@ -8,10 +8,10 @@
 /* eslint-disable */
 // ReSharper disable InconsistentNaming
 
-import { mergeMap as _observableMergeMap, catchError as _observableCatch } from 'rxjs/operators';
-import { Observable, throwError as _observableThrow, of as _observableOf } from 'rxjs';
-import { Injectable, Inject, Optional, InjectionToken } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse, HttpResponseBase, HttpContext } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders, HttpResponse, HttpResponseBase } from '@angular/common/http';
+import { Inject, Injectable, InjectionToken, Optional } from '@angular/core';
+import { Observable, of as _observableOf, throwError as _observableThrow } from 'rxjs';
+import { catchError as _observableCatch, mergeMap as _observableMergeMap } from 'rxjs/operators';
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
@@ -22,6 +22,18 @@ export interface IHouseMatch {
      * @return OK
      */
     login(body: Login): Observable<Token>;
+    /**
+     * upload multimedia
+     * @param fileUpload (optional)
+     * @return OK
+     */
+    uploadMedia(fileUpload?: FileParameter | undefined): Observable<IdOutput>;
+    /**
+     * see multimedia
+     * @param filename nombre del archivo multimedia
+     * @return OK
+     */
+    seeFiles(filename: string): Observable<FileResponse>;
     /**
      * User list
      * @return OK
@@ -251,17 +263,21 @@ export interface IHouseMatch {
     /**
      * Create Property with location and medias
      * @param body Cuerpo del mensaje para crear el property con location y medias.
-     * @param medias_ids (optional) 
+     * @param medias_ids (optional)
      * @return OK
      */
     createCompleteProperty(body: PropertyLocationCreateInput, medias_ids?: string | undefined): Observable<IdOutput>;
     /**
      * Update Property with location and medias
      * @param body Cuerpo del mensaje para actualizar el property con location y medias.
-     * @param medias_ids (optional) 
+     * @param medias_ids (optional)
      * @return OK
      */
-    updateCompleteProperty(id: string, body: PropertyLocationUpdateInput, medias_ids?: string | undefined): Observable<BoolOutput>;
+    updateCompleteProperty(
+        id: string,
+        body: PropertyLocationUpdateInput,
+        medias_ids?: string | undefined
+    ): Observable<BoolOutput>;
     /**
      * Property list
      * @return OK
@@ -309,7 +325,19 @@ export interface IHouseMatch {
      * @param district (optional) distrito
      * @return OK
      */
-    getTransactions(typeProperty?: string | undefined, rooms?: number | undefined, bathrooms?: number | undefined, minArea?: number | undefined, maxArea?: number | undefined, typeTransaction?: string | undefined, maxCost?: number | undefined, minCost?: number | undefined, country?: string | undefined, province?: string | undefined, district?: string | undefined): Observable<TransactionThirdLevel[]>;
+    getTransactions(
+        typeProperty?: string | undefined,
+        rooms?: number | undefined,
+        bathrooms?: number | undefined,
+        minArea?: number | undefined,
+        maxArea?: number | undefined,
+        typeTransaction?: string | undefined,
+        maxCost?: number | undefined,
+        minCost?: number | undefined,
+        country?: string | undefined,
+        province?: string | undefined,
+        district?: string | undefined
+    ): Observable<TransactionThirdLevel[]>;
     /**
      * Create Transaction
      * @param body Cuerpo del mensaje para crear el Transaction.
@@ -340,7 +368,7 @@ export interface IHouseMatch {
 }
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class HouseMatch implements IHouseMatch {
     private http: HttpClient;
@@ -349,7 +377,38 @@ export class HouseMatch implements IHouseMatch {
 
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
-        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "http://localhost:8080/v1";
+        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : 'http://localhost:8080/v1';
+    }
+
+    loginFoo(body: Login, httpContext?: HttpContext): Observable<Token> {
+        let url_ = this.baseUrl + '/users/login';
+        url_ = url_.replace(/[?&]$/, '');
+
+        const content_ = JSON.stringify(body);
+
+        let options_: any = {
+            body: content_,
+            observe: 'response',
+            responseType: 'blob',
+            context: httpContext,
+            headers: new HttpHeaders({
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
+        };
+
+        return this.http.post(url_, content_, options_).pipe(
+            _observableMergeMap((response_: any) => {
+                return blobToText(response_).pipe(
+                    _observableMergeMap((_responseText: string) => {
+                        let result201: any = null;
+                        result201 =
+                            _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Token);
+                        return _observableOf(result201);
+                    })
+                );
+            })
+        );
     }
 
     /**
@@ -358,71 +417,327 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     login(body: Login, httpContext?: HttpContext): Observable<Token> {
-        let url_ = this.baseUrl + "/users/login";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/users/login';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processLogin(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processLogin(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<Token>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<Token>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processLogin(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processLogin(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<Token>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<Token>;
+                })
+            );
     }
 
     protected processLogin(response: HttpResponseBase): Observable<Token> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Token;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Token);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
+        }
+        return _observableOf(null as any);
+    }
+
+    uploadMediaFoo(file: File): Observable<any> {
+        const formData = new FormData();
+        formData.append('fileUpload', file);
+        return this.http.post('http://167.71.53.173:8080/v1/media/upload', formData);
+    }
+
+    /**
+     * upload multimedia
+     * @param fileUpload (optional)
+     * @return OK
+     */
+    uploadMedia(fileUpload?: FileParameter | undefined, httpContext?: HttpContext): Observable<IdOutput> {
+        let url_ = this.baseUrl + '/media/upload';
+        url_ = url_.replace(/[?&]$/, '');
+
+        const content_ = new FormData();
+        if (fileUpload === null || fileUpload === undefined)
+            throw new Error("The parameter 'fileUpload' cannot be null.");
+        else content_.append('fileUpload', fileUpload.data, fileUpload.fileName ? fileUpload.fileName : 'fileUpload');
+
+        let options_: any = {
+            body: content_,
+            observe: 'response',
+            responseType: 'blob',
+            context: httpContext,
+            headers: new HttpHeaders({
+                Accept: 'application/json',
+            }),
+        };
+
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUploadMedia(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUploadMedia(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
+    }
+
+    protected processUploadMedia(response: HttpResponseBase): Observable<IdOutput> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
+
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
+        } else if (status === 422) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
+        } else if (status === 500) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * see multimedia
+     * @param filename nombre del archivo multimedia
+     * @return OK
+     */
+    seeFiles(filename: string, httpContext?: HttpContext): Observable<FileResponse> {
+        let url_ = this.baseUrl + '/media/files/{filename}';
+        if (filename === undefined || filename === null) throw new Error("The parameter 'filename' must be defined.");
+        url_ = url_.replace('{filename}', encodeURIComponent('' + filename));
+        url_ = url_.replace(/[?&]$/, '');
+
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
+            context: httpContext,
+            headers: new HttpHeaders({
+                Accept: 'image/jpeg',
+            }),
+        };
+
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processSeeFiles(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processSeeFiles(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<FileResponse>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<FileResponse>;
+                })
+            );
+    }
+
+    protected processSeeFiles(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
+
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
+        if (status === 201) {
+            const contentDisposition = response.headers ? response.headers.get('content-disposition') : undefined;
+            let fileNameMatch = contentDisposition
+                ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition)
+                : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
+        } else if (status === 422) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
+        } else if (status === 500) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -432,67 +747,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getUsers(httpContext?: HttpContext): Observable<UserSecondLevel[]> {
-        let url_ = this.baseUrl + "/users";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/users';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetUsers(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetUsers(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<UserSecondLevel[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<UserSecondLevel[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetUsers(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetUsers(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<UserSecondLevel[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<UserSecondLevel[]>;
+                })
+            );
     }
 
     protected processGetUsers(response: HttpResponseBase): Observable<UserSecondLevel[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserSecondLevel[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UserSecondLevel[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -503,71 +852,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createUser(body: UserInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/users";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/users';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateUser(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateUser(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateUser(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateUser(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateUser(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -577,70 +958,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getUser(id: string, httpContext?: HttpContext): Observable<UserSecondLevel> {
-        let url_ = this.baseUrl + "/users/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/users/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetUser(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetUser(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<UserSecondLevel>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<UserSecondLevel>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetUser(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetUser(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<UserSecondLevel>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<UserSecondLevel>;
+                })
+            );
     }
 
     protected processGetUser(response: HttpResponseBase): Observable<UserSecondLevel> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserSecondLevel;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UserSecondLevel);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -651,74 +1065,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateUser(id: string, body: UserInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/users/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/users/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateUser(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateUser(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateUser(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateUser(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateUser(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -728,70 +1173,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteUser(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/users/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/users/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteUser(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteUser(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteUser(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteUser(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteUser(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -801,67 +1277,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getUsersWithRoles(httpContext?: HttpContext): Observable<UserWithRoles[]> {
-        let url_ = this.baseUrl + "/users/roles";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/users/roles';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetUsersWithRoles(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetUsersWithRoles(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<UserWithRoles[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<UserWithRoles[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetUsersWithRoles(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetUsersWithRoles(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<UserWithRoles[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<UserWithRoles[]>;
+                })
+            );
     }
 
     protected processGetUsersWithRoles(response: HttpResponseBase): Observable<UserWithRoles[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserWithRoles[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UserWithRoles[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -871,67 +1381,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getPersons(httpContext?: HttpContext): Observable<PersonSecondLevel[]> {
-        let url_ = this.baseUrl + "/persons";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/persons';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetPersons(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetPersons(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<PersonSecondLevel[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<PersonSecondLevel[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetPersons(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetPersons(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<PersonSecondLevel[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<PersonSecondLevel[]>;
+                })
+            );
     }
 
     protected processGetPersons(response: HttpResponseBase): Observable<PersonSecondLevel[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PersonSecondLevel[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as PersonSecondLevel[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -942,71 +1486,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createPerson(body: PersonInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/persons";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/persons';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreatePerson(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreatePerson(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreatePerson(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreatePerson(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreatePerson(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1016,70 +1592,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getPerson(id: string, httpContext?: HttpContext): Observable<PersonSecondLevel> {
-        let url_ = this.baseUrl + "/persons/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/persons/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetPerson(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetPerson(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<PersonSecondLevel>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<PersonSecondLevel>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetPerson(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetPerson(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<PersonSecondLevel>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<PersonSecondLevel>;
+                })
+            );
     }
 
     protected processGetPerson(response: HttpResponseBase): Observable<PersonSecondLevel> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PersonSecondLevel;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as PersonSecondLevel);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1090,74 +1699,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updatePerson(id: string, body: PersonInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/persons/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/persons/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdatePerson(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdatePerson(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdatePerson(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdatePerson(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdatePerson(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1167,70 +1807,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deletePerson(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/persons/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/persons/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeletePerson(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeletePerson(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeletePerson(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeletePerson(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeletePerson(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1241,71 +1912,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createPersonLocation(body: PersonLocationCreateInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/personsLocations";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/personsLocations';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreatePersonLocation(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreatePersonLocation(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreatePersonLocation(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreatePersonLocation(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreatePersonLocation(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1315,75 +2018,110 @@ export class HouseMatch implements IHouseMatch {
      * @param body Cuerpo del mensaje para crear el person.
      * @return OK
      */
-    updatePersonLocation(id: string, body: PersonLocationUpdateInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/personsLocations/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+    updatePersonLocation(
+        id: string,
+        body: PersonLocationUpdateInput,
+        httpContext?: HttpContext
+    ): Observable<BoolOutput> {
+        let url_ = this.baseUrl + '/personsLocations/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdatePersonLocation(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdatePersonLocation(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdatePersonLocation(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdatePersonLocation(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdatePersonLocation(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1393,70 +2131,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getUserRoles(userID: string, httpContext?: HttpContext): Observable<UserRole[]> {
-        let url_ = this.baseUrl + "/userRole/user/{userID}";
-        if (userID === undefined || userID === null)
-            throw new Error("The parameter 'userID' must be defined.");
-        url_ = url_.replace("{userID}", encodeURIComponent("" + userID));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/userRole/user/{userID}';
+        if (userID === undefined || userID === null) throw new Error("The parameter 'userID' must be defined.");
+        url_ = url_.replace('{userID}', encodeURIComponent('' + userID));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetUserRoles(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetUserRoles(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<UserRole[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<UserRole[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetUserRoles(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetUserRoles(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<UserRole[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<UserRole[]>;
+                })
+            );
     }
 
     protected processGetUserRoles(response: HttpResponseBase): Observable<UserRole[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserRole[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as UserRole[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1466,73 +2235,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getUserRole(userId: string, roleId: string, httpContext?: HttpContext): Observable<UserRole> {
-        let url_ = this.baseUrl + "/userRole/user/{userId}/role/{roleId}";
-        if (userId === undefined || userId === null)
-            throw new Error("The parameter 'userId' must be defined.");
-        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
-        if (roleId === undefined || roleId === null)
-            throw new Error("The parameter 'roleId' must be defined.");
-        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/userRole/user/{userId}/role/{roleId}';
+        if (userId === undefined || userId === null) throw new Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace('{userId}', encodeURIComponent('' + userId));
+        if (roleId === undefined || roleId === null) throw new Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace('{roleId}', encodeURIComponent('' + roleId));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetUserRole(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetUserRole(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<UserRole>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<UserRole>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetUserRole(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetUserRole(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<UserRole>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<UserRole>;
+                })
+            );
     }
 
     protected processGetUserRole(response: HttpResponseBase): Observable<UserRole> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserRole;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as UserRole);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1542,73 +2341,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     postUserRole(userId: string, roleId: string, httpContext?: HttpContext): Observable<AssignedBoolOutput> {
-        let url_ = this.baseUrl + "/userRole/user/{userId}/role/{roleId}";
-        if (userId === undefined || userId === null)
-            throw new Error("The parameter 'userId' must be defined.");
-        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
-        if (roleId === undefined || roleId === null)
-            throw new Error("The parameter 'roleId' must be defined.");
-        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/userRole/user/{userId}/role/{roleId}';
+        if (userId === undefined || userId === null) throw new Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace('{userId}', encodeURIComponent('' + userId));
+        if (roleId === undefined || roleId === null) throw new Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace('{roleId}', encodeURIComponent('' + roleId));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processPostUserRole(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processPostUserRole(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<AssignedBoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<AssignedBoolOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processPostUserRole(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processPostUserRole(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<AssignedBoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<AssignedBoolOutput>;
+                })
+            );
     }
 
     protected processPostUserRole(response: HttpResponseBase): Observable<AssignedBoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssignedBoolOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as AssignedBoolOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1618,73 +2449,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteUserRole(userId: string, roleId: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/userRole/user/{userId}/role/{roleId}";
-        if (userId === undefined || userId === null)
-            throw new Error("The parameter 'userId' must be defined.");
-        url_ = url_.replace("{userId}", encodeURIComponent("" + userId));
-        if (roleId === undefined || roleId === null)
-            throw new Error("The parameter 'roleId' must be defined.");
-        url_ = url_.replace("{roleId}", encodeURIComponent("" + roleId));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/userRole/user/{userId}/role/{roleId}';
+        if (userId === undefined || userId === null) throw new Error("The parameter 'userId' must be defined.");
+        url_ = url_.replace('{userId}', encodeURIComponent('' + userId));
+        if (roleId === undefined || roleId === null) throw new Error("The parameter 'roleId' must be defined.");
+        url_ = url_.replace('{roleId}', encodeURIComponent('' + roleId));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteUserRole(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteUserRole(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteUserRole(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteUserRole(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteUserRole(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1694,67 +2555,99 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getRoles(httpContext?: HttpContext): Observable<Role[]> {
-        let url_ = this.baseUrl + "/roles";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roles';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetRoles(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetRoles(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<Role[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<Role[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetRoles(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetRoles(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<Role[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<Role[]>;
+                })
+            );
     }
 
     protected processGetRoles(response: HttpResponseBase): Observable<Role[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Role[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Role[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1765,71 +2658,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createRole(body: RoleInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/roles";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roles';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateRole(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateRole(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateRole(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateRole(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateRole(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1839,70 +2764,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getRole(id: string, httpContext?: HttpContext): Observable<Role> {
-        let url_ = this.baseUrl + "/roles/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roles/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetRole(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetRole(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<Role>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<Role>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetRole(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetRole(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<Role>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<Role>;
+                })
+            );
     }
 
     protected processGetRole(response: HttpResponseBase): Observable<Role> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Role;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Role);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1913,74 +2869,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateRole(id: string, body: RoleInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/roles/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roles/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateRole(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateRole(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateRole(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateRole(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateRole(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -1990,70 +2977,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteRole(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/roles/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roles/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteRole(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteRole(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteRole(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteRole(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteRole(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2063,67 +3081,99 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getRoleView(httpContext?: HttpContext): Observable<RoleView[]> {
-        let url_ = this.baseUrl + "/roleView";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roleView';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetRoleView(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetRoleView(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<RoleView[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<RoleView[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetRoleView(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetRoleView(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<RoleView[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<RoleView[]>;
+                })
+            );
     }
 
     protected processGetRoleView(response: HttpResponseBase): Observable<RoleView[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RoleView[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as RoleView[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2134,71 +3184,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     assignmentRoleView(body: RoleViewInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/roleView";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roleView';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processAssignmentRoleView(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processAssignmentRoleView(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processAssignmentRoleView(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processAssignmentRoleView(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processAssignmentRoleView(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2209,71 +3291,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateRoleView(body: RoleViewInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/roleView";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roleView';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateRoleView(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateRoleView(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateRoleView(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateRoleView(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateRoleView(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2283,73 +3397,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getRoleViewDetail(roleID: string, viewID: string, httpContext?: HttpContext): Observable<UserRole> {
-        let url_ = this.baseUrl + "/roleView/role/{roleID}/view/{viewID}";
-        if (roleID === undefined || roleID === null)
-            throw new Error("The parameter 'roleID' must be defined.");
-        url_ = url_.replace("{roleID}", encodeURIComponent("" + roleID));
-        if (viewID === undefined || viewID === null)
-            throw new Error("The parameter 'viewID' must be defined.");
-        url_ = url_.replace("{viewID}", encodeURIComponent("" + viewID));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roleView/role/{roleID}/view/{viewID}';
+        if (roleID === undefined || roleID === null) throw new Error("The parameter 'roleID' must be defined.");
+        url_ = url_.replace('{roleID}', encodeURIComponent('' + roleID));
+        if (viewID === undefined || viewID === null) throw new Error("The parameter 'viewID' must be defined.");
+        url_ = url_.replace('{viewID}', encodeURIComponent('' + viewID));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetRoleViewDetail(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetRoleViewDetail(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<UserRole>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<UserRole>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetRoleViewDetail(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetRoleViewDetail(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<UserRole>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<UserRole>;
+                })
+            );
     }
 
     protected processGetRoleViewDetail(response: HttpResponseBase): Observable<UserRole> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserRole;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as UserRole);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2359,73 +3503,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteRoleViewDetail(roleID: string, viewID: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/roleView/role/{roleID}/view/{viewID}";
-        if (roleID === undefined || roleID === null)
-            throw new Error("The parameter 'roleID' must be defined.");
-        url_ = url_.replace("{roleID}", encodeURIComponent("" + roleID));
-        if (viewID === undefined || viewID === null)
-            throw new Error("The parameter 'viewID' must be defined.");
-        url_ = url_.replace("{viewID}", encodeURIComponent("" + viewID));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/roleView/role/{roleID}/view/{viewID}';
+        if (roleID === undefined || roleID === null) throw new Error("The parameter 'roleID' must be defined.");
+        url_ = url_.replace('{roleID}', encodeURIComponent('' + roleID));
+        if (viewID === undefined || viewID === null) throw new Error("The parameter 'viewID' must be defined.");
+        url_ = url_.replace('{viewID}', encodeURIComponent('' + viewID));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteRoleViewDetail(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteRoleViewDetail(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteRoleViewDetail(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteRoleViewDetail(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteRoleViewDetail(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2435,67 +3609,99 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getModules(httpContext?: HttpContext): Observable<Module[]> {
-        let url_ = this.baseUrl + "/modules";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/modules';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetModules(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetModules(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<Module[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<Module[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetModules(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetModules(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<Module[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<Module[]>;
+                })
+            );
     }
 
     protected processGetModules(response: HttpResponseBase): Observable<Module[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Module[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Module[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2506,71 +3712,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createModule(body: ModuleInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/modules";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/modules';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateModule(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateModule(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateModule(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateModule(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateModule(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2580,70 +3818,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getModule(id: string, httpContext?: HttpContext): Observable<Module> {
-        let url_ = this.baseUrl + "/modules/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/modules/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetModule(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetModule(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<Module>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<Module>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetModule(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetModule(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<Module>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<Module>;
+                })
+            );
     }
 
     protected processGetModule(response: HttpResponseBase): Observable<Module> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Module;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Module);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2654,74 +3923,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateModule(id: string, body: ModuleInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/modules/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/modules/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateModule(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateModule(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateModule(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateModule(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateModule(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2731,70 +4031,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteModule(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/modules/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/modules/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteModule(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteModule(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteModule(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteModule(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteModule(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2804,67 +4135,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getViews(httpContext?: HttpContext): Observable<ViewSecondLevel[]> {
-        let url_ = this.baseUrl + "/views";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/views';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetViews(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetViews(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<ViewSecondLevel[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<ViewSecondLevel[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetViews(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetViews(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<ViewSecondLevel[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<ViewSecondLevel[]>;
+                })
+            );
     }
 
     protected processGetViews(response: HttpResponseBase): Observable<ViewSecondLevel[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ViewSecondLevel[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as ViewSecondLevel[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2875,71 +4240,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createView(body: ViewInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/views";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/views';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateView(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateView(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateView(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateView(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateView(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -2949,70 +4346,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getView(id: string, httpContext?: HttpContext): Observable<ViewSecondLevel> {
-        let url_ = this.baseUrl + "/views/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/views/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetView(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetView(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<ViewSecondLevel>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<ViewSecondLevel>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetView(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetView(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<ViewSecondLevel>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<ViewSecondLevel>;
+                })
+            );
     }
 
     protected processGetView(response: HttpResponseBase): Observable<ViewSecondLevel> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ViewSecondLevel;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as ViewSecondLevel);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3023,74 +4453,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateView(id: string, body: ViewInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/views/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/views/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateView(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateView(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateView(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateView(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateView(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3100,70 +4561,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteView(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/views/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/views/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteView(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteView(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteView(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteView(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteView(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3173,67 +4665,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getProperties(httpContext?: HttpContext): Observable<PropertySecondLevel[]> {
-        let url_ = this.baseUrl + "/properties";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/properties';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetProperties(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetProperties(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<PropertySecondLevel[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<PropertySecondLevel[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetProperties(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetProperties(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<PropertySecondLevel[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<PropertySecondLevel[]>;
+                })
+            );
     }
 
     protected processGetProperties(response: HttpResponseBase): Observable<PropertySecondLevel[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3244,71 +4770,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createProperty(body: PropertyInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/properties";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/properties';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateProperty(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateProperty(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateProperty(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateProperty(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateProperty(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3318,70 +4876,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getProperty(id: string, httpContext?: HttpContext): Observable<PropertySecondLevel> {
-        let url_ = this.baseUrl + "/properties/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/properties/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetProperty(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetProperty(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<PropertySecondLevel>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<PropertySecondLevel>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetProperty(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetProperty(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<PropertySecondLevel>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<PropertySecondLevel>;
+                })
+            );
     }
 
     protected processGetProperty(response: HttpResponseBase): Observable<PropertySecondLevel> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3392,74 +4983,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateProperty(id: string, body: PropertyInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/properties/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/properties/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateProperty(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateProperty(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateProperty(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateProperty(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateProperty(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3469,70 +5091,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteProperty(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/properties/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/properties/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteProperty(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteProperty(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteProperty(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteProperty(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteProperty(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3540,79 +5193,113 @@ export class HouseMatch implements IHouseMatch {
     /**
      * Create Property with location and medias
      * @param body Cuerpo del mensaje para crear el property con location y medias.
-     * @param medias_ids (optional) 
+     * @param medias_ids (optional)
      * @return OK
      */
-    createCompleteProperty(body: PropertyLocationCreateInput, medias_ids?: string | undefined, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/properties/create?";
-        if (medias_ids === null)
-            throw new Error("The parameter 'medias_ids' cannot be null.");
-        else if (medias_ids !== undefined)
-            url_ += "medias_ids=" + encodeURIComponent("" + medias_ids) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+    createCompleteProperty(
+        body: PropertyLocationCreateInput,
+        medias_ids?: string | undefined,
+        httpContext?: HttpContext
+    ): Observable<IdOutput> {
+        let url_ = this.baseUrl + '/properties/create?';
+        if (medias_ids === null) throw new Error("The parameter 'medias_ids' cannot be null.");
+        else if (medias_ids !== undefined) url_ += 'medias_ids=' + encodeURIComponent('' + medias_ids) + '&';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateCompleteProperty(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateCompleteProperty(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateCompleteProperty(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateCompleteProperty(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateCompleteProperty(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3620,82 +5307,116 @@ export class HouseMatch implements IHouseMatch {
     /**
      * Update Property with location and medias
      * @param body Cuerpo del mensaje para actualizar el property con location y medias.
-     * @param medias_ids (optional) 
+     * @param medias_ids (optional)
      * @return OK
      */
-    updateCompleteProperty(id: string, body: PropertyLocationUpdateInput, medias_ids?: string | undefined, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/properties/update/{id}?";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (medias_ids === null)
-            throw new Error("The parameter 'medias_ids' cannot be null.");
-        else if (medias_ids !== undefined)
-            url_ += "medias_ids=" + encodeURIComponent("" + medias_ids) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+    updateCompleteProperty(
+        id: string,
+        body: PropertyLocationUpdateInput,
+        medias_ids?: string | undefined,
+        httpContext?: HttpContext
+    ): Observable<BoolOutput> {
+        let url_ = this.baseUrl + '/properties/update/{id}?';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        if (medias_ids === null) throw new Error("The parameter 'medias_ids' cannot be null.");
+        else if (medias_ids !== undefined) url_ += 'medias_ids=' + encodeURIComponent('' + medias_ids) + '&';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateCompleteProperty(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateCompleteProperty(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateCompleteProperty(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateCompleteProperty(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateCompleteProperty(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3705,70 +5426,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getPropertyUserId(id: string, httpContext?: HttpContext): Observable<PropertySecondLevel[]> {
-        let url_ = this.baseUrl + "/properties/user/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/properties/user/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetPropertyUserId(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetPropertyUserId(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<PropertySecondLevel[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<PropertySecondLevel[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetPropertyUserId(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetPropertyUserId(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<PropertySecondLevel[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<PropertySecondLevel[]>;
+                })
+            );
     }
 
     protected processGetPropertyUserId(response: HttpResponseBase): Observable<PropertySecondLevel[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as PropertySecondLevel[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3778,67 +5532,99 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getLocations(httpContext?: HttpContext): Observable<Location[]> {
-        let url_ = this.baseUrl + "/locations";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/locations';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetLocations(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetLocations(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<Location[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<Location[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetLocations(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetLocations(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<Location[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<Location[]>;
+                })
+            );
     }
 
     protected processGetLocations(response: HttpResponseBase): Observable<Location[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Location[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Location[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3849,71 +5635,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createLocation(body: LocationInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/locations";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/locations';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateLocation(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateLocation(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateLocation(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateLocation(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateLocation(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3923,70 +5741,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getLocation(id: string, httpContext?: HttpContext): Observable<Location> {
-        let url_ = this.baseUrl + "/locations/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/locations/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetLocation(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetLocation(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<Location>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<Location>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetLocation(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetLocation(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<Location>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<Location>;
+                })
+            );
     }
 
     protected processGetLocation(response: HttpResponseBase): Observable<Location> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as Location;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Location);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -3997,74 +5846,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateLocation(id: string, body: LocationInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/locations/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/locations/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateLocation(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateLocation(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateLocation(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateLocation(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateLocation(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -4074,70 +5954,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteLocation(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/locations/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/locations/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteLocation(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteLocation(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteLocation(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteLocation(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteLocation(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -4157,112 +6068,138 @@ export class HouseMatch implements IHouseMatch {
      * @param district (optional) distrito
      * @return OK
      */
-    getTransactions(typeProperty?: string | undefined, rooms?: number | undefined, bathrooms?: number | undefined, minArea?: number | undefined, maxArea?: number | undefined, typeTransaction?: string | undefined, maxCost?: number | undefined, minCost?: number | undefined, country?: string | undefined, province?: string | undefined, district?: string | undefined, httpContext?: HttpContext): Observable<TransactionThirdLevel[]> {
-        let url_ = this.baseUrl + "/transactions?";
-        if (typeProperty === null)
-            throw new Error("The parameter 'typeProperty' cannot be null.");
-        else if (typeProperty !== undefined)
-            url_ += "typeProperty=" + encodeURIComponent("" + typeProperty) + "&";
-        if (rooms === null)
-            throw new Error("The parameter 'rooms' cannot be null.");
-        else if (rooms !== undefined)
-            url_ += "rooms=" + encodeURIComponent("" + rooms) + "&";
-        if (bathrooms === null)
-            throw new Error("The parameter 'bathrooms' cannot be null.");
-        else if (bathrooms !== undefined)
-            url_ += "bathrooms=" + encodeURIComponent("" + bathrooms) + "&";
-        if (minArea === null)
-            throw new Error("The parameter 'minArea' cannot be null.");
-        else if (minArea !== undefined)
-            url_ += "minArea=" + encodeURIComponent("" + minArea) + "&";
-        if (maxArea === null)
-            throw new Error("The parameter 'maxArea' cannot be null.");
-        else if (maxArea !== undefined)
-            url_ += "maxArea=" + encodeURIComponent("" + maxArea) + "&";
-        if (typeTransaction === null)
-            throw new Error("The parameter 'typeTransaction' cannot be null.");
+    getTransactions(
+        typeProperty?: string | undefined,
+        rooms?: number | undefined,
+        bathrooms?: number | undefined,
+        minArea?: number | undefined,
+        maxArea?: number | undefined,
+        typeTransaction?: string | undefined,
+        maxCost?: number | undefined,
+        minCost?: number | undefined,
+        country?: string | undefined,
+        province?: string | undefined,
+        district?: string | undefined,
+        httpContext?: HttpContext
+    ): Observable<TransactionThirdLevel[]> {
+        let url_ = this.baseUrl + '/transactions?';
+        if (typeProperty === null) throw new Error("The parameter 'typeProperty' cannot be null.");
+        else if (typeProperty !== undefined) url_ += 'typeProperty=' + encodeURIComponent('' + typeProperty) + '&';
+        if (rooms === null) throw new Error("The parameter 'rooms' cannot be null.");
+        else if (rooms !== undefined) url_ += 'rooms=' + encodeURIComponent('' + rooms) + '&';
+        if (bathrooms === null) throw new Error("The parameter 'bathrooms' cannot be null.");
+        else if (bathrooms !== undefined) url_ += 'bathrooms=' + encodeURIComponent('' + bathrooms) + '&';
+        if (minArea === null) throw new Error("The parameter 'minArea' cannot be null.");
+        else if (minArea !== undefined) url_ += 'minArea=' + encodeURIComponent('' + minArea) + '&';
+        if (maxArea === null) throw new Error("The parameter 'maxArea' cannot be null.");
+        else if (maxArea !== undefined) url_ += 'maxArea=' + encodeURIComponent('' + maxArea) + '&';
+        if (typeTransaction === null) throw new Error("The parameter 'typeTransaction' cannot be null.");
         else if (typeTransaction !== undefined)
-            url_ += "typeTransaction=" + encodeURIComponent("" + typeTransaction) + "&";
-        if (maxCost === null)
-            throw new Error("The parameter 'maxCost' cannot be null.");
-        else if (maxCost !== undefined)
-            url_ += "maxCost=" + encodeURIComponent("" + maxCost) + "&";
-        if (minCost === null)
-            throw new Error("The parameter 'minCost' cannot be null.");
-        else if (minCost !== undefined)
-            url_ += "minCost=" + encodeURIComponent("" + minCost) + "&";
-        if (country === null)
-            throw new Error("The parameter 'country' cannot be null.");
-        else if (country !== undefined)
-            url_ += "country=" + encodeURIComponent("" + country) + "&";
-        if (province === null)
-            throw new Error("The parameter 'province' cannot be null.");
-        else if (province !== undefined)
-            url_ += "province=" + encodeURIComponent("" + province) + "&";
-        if (district === null)
-            throw new Error("The parameter 'district' cannot be null.");
-        else if (district !== undefined)
-            url_ += "district=" + encodeURIComponent("" + district) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+            url_ += 'typeTransaction=' + encodeURIComponent('' + typeTransaction) + '&';
+        if (maxCost === null) throw new Error("The parameter 'maxCost' cannot be null.");
+        else if (maxCost !== undefined) url_ += 'maxCost=' + encodeURIComponent('' + maxCost) + '&';
+        if (minCost === null) throw new Error("The parameter 'minCost' cannot be null.");
+        else if (minCost !== undefined) url_ += 'minCost=' + encodeURIComponent('' + minCost) + '&';
+        if (country === null) throw new Error("The parameter 'country' cannot be null.");
+        else if (country !== undefined) url_ += 'country=' + encodeURIComponent('' + country) + '&';
+        if (province === null) throw new Error("The parameter 'province' cannot be null.");
+        else if (province !== undefined) url_ += 'province=' + encodeURIComponent('' + province) + '&';
+        if (district === null) throw new Error("The parameter 'district' cannot be null.");
+        else if (district !== undefined) url_ += 'district=' + encodeURIComponent('' + district) + '&';
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetTransactions(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetTransactions(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<TransactionThirdLevel[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<TransactionThirdLevel[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetTransactions(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetTransactions(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<TransactionThirdLevel[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<TransactionThirdLevel[]>;
+                })
+            );
     }
 
     protected processGetTransactions(response: HttpResponseBase): Observable<TransactionThirdLevel[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TransactionThirdLevel[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as TransactionThirdLevel[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -4273,71 +6210,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     createTransaction(body: TransactionInput, httpContext?: HttpContext): Observable<IdOutput> {
-        let url_ = this.baseUrl + "/transactions";
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/transactions';
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processCreateTransaction(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processCreateTransaction(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<IdOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<IdOutput>;
-        }));
+        return this.http
+            .request('post', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processCreateTransaction(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processCreateTransaction(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<IdOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<IdOutput>;
+                })
+            );
     }
 
     protected processCreateTransaction(response: HttpResponseBase): Observable<IdOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 201) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IdOutput;
-            return _observableOf(result201);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result201: any = null;
+                    result201 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as IdOutput);
+                    return _observableOf(result201);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -4347,70 +6316,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getTransaction(id: string, httpContext?: HttpContext): Observable<TransactionSecondLevel> {
-        let url_ = this.baseUrl + "/transactions/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/transactions/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetTransaction(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetTransaction(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<TransactionSecondLevel>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<TransactionSecondLevel>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetTransaction(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetTransaction(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<TransactionSecondLevel>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<TransactionSecondLevel>;
+                })
+            );
     }
 
     protected processGetTransaction(response: HttpResponseBase): Observable<TransactionSecondLevel> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TransactionSecondLevel;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as TransactionSecondLevel);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -4421,74 +6423,105 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     updateTransaction(id: string, body: TransactionInput, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/transactions/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/transactions/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
         const content_ = JSON.stringify(body);
 
-        let options_ : any = {
+        let options_: any = {
             body: content_,
-            observe: "response",
-            responseType: "blob",
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processUpdateTransaction(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processUpdateTransaction(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('put', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processUpdateTransaction(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processUpdateTransaction(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processUpdateTransaction(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -4498,70 +6531,101 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     deleteTransaction(id: string, httpContext?: HttpContext): Observable<BoolOutput> {
-        let url_ = this.baseUrl + "/transactions/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/transactions/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processDeleteTransaction(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processDeleteTransaction(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<BoolOutput>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<BoolOutput>;
-        }));
+        return this.http
+            .request('delete', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processDeleteTransaction(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processDeleteTransaction(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<BoolOutput>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<BoolOutput>;
+                })
+            );
     }
 
     protected processDeleteTransaction(response: HttpResponseBase): Observable<BoolOutput> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result204: any = null;
-            result204 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput;
-            return _observableOf(result204);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result204: any = null;
+                    result204 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BoolOutput);
+                    return _observableOf(result204);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -4571,70 +6635,103 @@ export class HouseMatch implements IHouseMatch {
      * @return OK
      */
     getTransactionByUser(id: string, httpContext?: HttpContext): Observable<TransactionSecondLevel[]> {
-        let url_ = this.baseUrl + "/transactions/user/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
+        let url_ = this.baseUrl + '/transactions/user/{id}';
+        if (id === undefined || id === null) throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace('{id}', encodeURIComponent('' + id));
+        url_ = url_.replace(/[?&]$/, '');
 
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
+        let options_: any = {
+            observe: 'response',
+            responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
+                Accept: 'application/json',
+            }),
         };
 
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetTransactionByUser(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetTransactionByUser(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<TransactionSecondLevel[]>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<TransactionSecondLevel[]>;
-        }));
+        return this.http
+            .request('get', url_, options_)
+            .pipe(
+                _observableMergeMap((response_: any) => {
+                    return this.processGetTransactionByUser(response_);
+                })
+            )
+            .pipe(
+                _observableCatch((response_: any) => {
+                    if (response_ instanceof HttpResponseBase) {
+                        try {
+                            return this.processGetTransactionByUser(response_ as any);
+                        } catch (e) {
+                            return _observableThrow(e) as any as Observable<TransactionSecondLevel[]>;
+                        }
+                    } else return _observableThrow(response_) as any as Observable<TransactionSecondLevel[]>;
+                })
+            );
     }
 
     protected processGetTransactionByUser(response: HttpResponseBase): Observable<TransactionSecondLevel[]> {
         const status = response.status;
         const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
+            response instanceof HttpResponse
+                ? response.body
+                : (response as any).error instanceof Blob
+                ? (response as any).error
+                : undefined;
 
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        let _headers: any = {};
+        if (response.headers) {
+            for (let key of response.headers.keys()) {
+                _headers[key] = response.headers.get(key);
+            }
+        }
         if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TransactionSecondLevel[];
-            return _observableOf(result200);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result200: any = null;
+                    result200 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as TransactionSecondLevel[]);
+                    return _observableOf(result200);
+                })
+            );
         } else if (status === 400) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BadRequest;
-            return throwException("BAD_REQUEST", status, _responseText, _headers, result400);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result400: any = null;
+                    result400 =
+                        _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as BadRequest);
+                    return throwException('BAD_REQUEST', status, _responseText, _headers, result400);
+                })
+            );
         } else if (status === 422) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result422: any = null;
-            result422 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity;
-            return throwException("UNPROCESSABLE_ENTITY", status, _responseText, _headers, result422);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result422: any = null;
+                    result422 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnprocessableEntity);
+                    return throwException('UNPROCESSABLE_ENTITY', status, _responseText, _headers, result422);
+                })
+            );
         } else if (status === 500) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result500: any = null;
-            result500 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError;
-            return throwException("INTERNAL_SERVER_ERROR", status, _responseText, _headers, result500);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    let result500: any = null;
+                    result500 =
+                        _responseText === ''
+                            ? null
+                            : (JSON.parse(_responseText, this.jsonParseReviver) as UnexpectedError);
+                    return throwException('INTERNAL_SERVER_ERROR', status, _responseText, _headers, result500);
+                })
+            );
         } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
+            return blobToText(responseBlob).pipe(
+                _observableMergeMap((_responseText: string) => {
+                    return throwException('An unexpected server error occurred.', status, _responseText, _headers);
+                })
+            );
         }
         return _observableOf(null as any);
     }
@@ -5371,14 +7468,26 @@ export interface EntityDetail {
     [key: string]: any;
 }
 
+export interface FileParameter {
+    data: any;
+    fileName: string;
+}
+
+export interface FileResponse {
+    data: Blob;
+    status: number;
+    fileName?: string;
+    headers?: { [name: string]: any };
+}
+
 export class ApiException extends Error {
     override message: string;
     status: number;
     response: string;
-    headers: { [key: string]: any; };
+    headers: { [key: string]: any };
     result: any;
 
-    constructor(message: string, status: number, response: string, headers: { [key: string]: any; }, result: any) {
+    constructor(message: string, status: number, response: string, headers: { [key: string]: any }, result: any) {
         super();
 
         this.message = message;
@@ -5395,18 +7504,24 @@ export class ApiException extends Error {
     }
 }
 
-function throwException(message: string, status: number, response: string, headers: { [key: string]: any; }, result?: any): Observable<any> {
+function throwException(
+    message: string,
+    status: number,
+    response: string,
+    headers: { [key: string]: any },
+    result?: any
+): Observable<any> {
     return _observableThrow(new ApiException(message, status, response, headers, result));
 }
 
 function blobToText(blob: any): Observable<string> {
     return new Observable<string>((observer: any) => {
         if (!blob) {
-            observer.next("");
+            observer.next('');
             observer.complete();
         } else {
             let reader = new FileReader();
-            reader.onload = event => {
+            reader.onload = (event) => {
                 observer.next((event.target as any).result);
                 observer.complete();
             };

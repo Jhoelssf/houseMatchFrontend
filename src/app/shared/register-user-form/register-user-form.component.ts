@@ -181,7 +181,7 @@ export class RegisterUserFormComponent implements OnInit, OnDestroy {
             });
         } else {
             const person: PersonWithoutLocation = this.formPerson.value;
-            person.photo = '6f25d142-feac-44ee-ad00-c348f900274d';
+            person.photo = '7f18f44e-f471-11ed-af91-0242ac110003';
             const location: LocationInput = this.formLocation.value;
             const personLocation: PersonLocationCreateInput = {
                 location,

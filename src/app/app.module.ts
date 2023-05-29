@@ -1,5 +1,7 @@
 import { HashLocationStrategy, LocationStrategy } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { environment } from '../environments/environment';
+import { API_BASE_URL } from './api/houseMatch.api';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { NotfoundComponent } from './demo/components/notfound/notfound.component';
@@ -25,6 +27,7 @@ import { AppLayoutModule } from './layout/app.layout.module';
         NodeService,
         PhotoService,
         ProductService,
+        { provide: API_BASE_URL, useValue: environment.apiBaseUrl },
     ],
     bootstrap: [AppComponent],
 })

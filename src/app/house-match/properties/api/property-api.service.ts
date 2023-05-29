@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
-import { BoolOutput, HouseMatch, IdOutput, Property, PropertyInput } from '../../../api/houseMatch.api';
+import {
+    BoolOutput,
+    HouseMatch,
+    IdOutput,
+    Property,
+    PropertyInput,
+    PropertyLocationCreateInput,
+} from '../../../api/houseMatch.api';
 
 @Injectable({
     providedIn: 'root',
@@ -24,6 +31,11 @@ export class PropertyApiService {
     }
     createProperty(body: PropertyInput): void {
         this.houseMatchApi.createProperty(body).subscribe((Property) => {
+            this.createProperty$.next(Property);
+        });
+    }
+    createPropertyWithMedia(body: PropertyLocationCreateInput, mediasId: string): void {
+        this.houseMatchApi.createCompleteProperty(body, mediasId).subscribe((Property) => {
             this.createProperty$.next(Property);
         });
     }

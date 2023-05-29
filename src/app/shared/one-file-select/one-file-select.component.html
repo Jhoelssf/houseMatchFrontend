@@ -21,9 +21,9 @@
             <p-fileUpload
                 mode="basic"
                 name="demo[]"
-                url="./upload.php"
                 accept="image/*"
                 [maxFileSize]="1000000"
+                (onSelect)="onBasicSelect($event)"
                 (onUpload)="onBasicUpload()"></p-fileUpload>
         </ng-template>
     </div>

@@ -4,7 +4,7 @@
   "documentGenerator": {
     "fromDocument": {
       "json": "",
-      "url": "http://localhost:8080/sw/users-openapi-spec.json",
+      "url": "http://167.71.53.173:8080/sw/users-openapi-spec.json",
       "output": null,
       "newLineBehavior": "Auto"
     }

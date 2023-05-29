@@ -1,19 +1,39 @@
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
-import { HouseMatch, Login, View, ViewSecondLevel } from '../../../api/houseMatch.api';
+import { BehaviorSubject, Subject } from 'rxjs';
+import { HouseMatch, Login, Token } from '../../../api/houseMatch.api';
 
 @Injectable({
     providedIn: 'root',
 })
 export class AuthApiService {
-    login$: Subject<ViewSecondLevel[] | any> = new Subject<ViewSecondLevel[] | any>();
-    error$: Subject<View[] | any> = new Subject<View[] | any>();
-    constructor(private houseMatchApi: HouseMatch) {}
+    currentUser: Token = {
+        token: '',
+    };
+    currentUser$: BehaviorSubject<Token> = new BehaviorSubject<Token>(this.currentUser);
+    error$: Subject<Token> = new Subject<Token>();
+    constructor(private houseMatchApi: HouseMatch) {
+        const tokenStr = localStorage.getItem('token');
+        const token: Token = tokenStr ? JSON.parse(tokenStr) : { token: '' };
+        this.currentUser = token;
+        this.currentUser$.next(this.currentUser);
+    }
 
     login(body: Login): void {
-        this.houseMatchApi.login(body).subscribe({
-            next: (views) => this.login$.next(views),
-            error: (error) => this.error$.next(error),
+        this.houseMatchApi.login(body).subscribe((tokenStr: any) => {
+            const token: Token = JSON.parse(tokenStr);
+            this.currentUser = token;
+
+            if (this.currentUser?.token) {
+                localStorage.setItem('token', this.currentUser.token);
+                this.currentUser$.next(this.currentUser);
+            }
         });
+    }
+
+    logout() {
+        localStorage.removeItem('token');
+        this.currentUser = {
+            token: '',
+        };
     }
 }

@@ -16,6 +16,52 @@
             </div>
         </div>
     </div>
+    <!-- Location -->
+    <div [formGroup]="formLocation" class="col-12 grid p-fluid">
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="country" pInputText formControlName="country" />
+                <label for="country">Pais</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="city" pInputText formControlName="city" />
+                <label for="city">Ciudad</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="province" pInputText formControlName="province" />
+                <label for="province">Provincia</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="district" pInputText formControlName="district" />
+                <label for="district">Distrito</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <input type="text" id="address" pInputText formControlName="address" />
+                <label for="address">Direccion</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <p-inputNumber inputId="latInput" formControlName="lat"></p-inputNumber>
+                <label for="latInput">lat</label>
+            </span>
+        </div>
+        <div class="field col-12 md:col-6 sm:col-12">
+            <span class="p-float-label">
+                <p-inputNumber inputId="longInput" formControlName="long"></p-inputNumber>
+                <label for="longInput">long</label>
+            </span>
+        </div>
+    </div>
+    <!-- Location -->
     <div class="field col-12 md:col-6 sm:col-12">
         <span class="p-float-label">
             <input type="text" id="propertyDescription" pInputText formControlName="description" />
@@ -127,6 +173,9 @@
             </p-inputNumber>
             <label for="garage">Garage</label>
         </span>
+    </div>
+    <div class="field col-12 md:col-12 sm:col-12">
+        <app-one-file-select [(file)]="file" [basic]="true"></app-one-file-select>
     </div>
 </div>
 <app-footer-dialog
