@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HouseMatch, IdOutput } from '../../api/houseMatch.api';
+import { FileParameter, HouseMatch, IdOutput } from '../../api/houseMatch.api';
 
 @Injectable({
     providedIn: 'root',
@@ -8,7 +8,7 @@ import { HouseMatch, IdOutput } from '../../api/houseMatch.api';
 export class MediaApiService {
     constructor(private houseMatchApi: HouseMatch) {}
 
-    createMedia(body: any): Observable<IdOutput> {
+    createMedia(body: FileParameter): Observable<IdOutput> {
         return this.houseMatchApi.uploadMedia(body);
     }
     createMediaFoo(body: File): Observable<any> {

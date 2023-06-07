@@ -5,3 +5,17 @@
 ::ng-deep .select-search > .p-autocomplete-dd {
     width: 100% !important;
 }
+.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.active i {
+    color: white;
+}
+
+.icon-style {
+    font-size: 4rem;
+    padding: 0.2em;
+    cursor: pointer;
+}

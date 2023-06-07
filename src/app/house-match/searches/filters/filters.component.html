@@ -1,18 +1,34 @@
-<div class="flex justify-content-between align-items-center">
+<div class="flex justify-content-between align-items-center" [formGroup]="formTransaction">
     <div class="col-6">
         <div class="card-select p-3">
             <h1 class="text-center">TIPOS DE PROPIEDAD</h1>
+            <input type="hidden" name="propertyType" formControlName="typeProperty" />
             <div class="flex justify-content-around align-items-center pt-4">
                 <div class="text-center">
-                    <div><i class="pi pi-home card-select" style="font-size: 4rem; padding: 0.2em"></i></div>
+                    <div>
+                        <i
+                            (click)="selectPropertyType(typePropertyOpts.HOUSE)"
+                            class="pi pi-home card-select icon-style"
+                            [class.active]="typeProperty.value === typePropertyOpts.HOUSE"></i>
+                    </div>
                     <h4>CASAS</h4>
                 </div>
                 <div class="text-center">
-                    <div><i class="pi pi-building card-select" style="font-size: 4rem; padding: 0.2em"></i></div>
+                    <div>
+                        <i
+                            (click)="selectPropertyType(typePropertyOpts.APARTMENT)"
+                            class="pi pi-building card-select icon-style"
+                            [class.active]="typeProperty.value === typePropertyOpts.APARTMENT"></i>
+                    </div>
                     <h4>DEPARTAMENTOS</h4>
                 </div>
                 <div class="text-center">
-                    <div><i class="pi pi-sitemap card-select" style="font-size: 4rem; padding: 0.2em"></i></div>
+                    <div>
+                        <i
+                            (click)="selectPropertyType(typePropertyOpts.LAND)"
+                            class="pi pi-sitemap card-select icon-style"
+                            [class.active]="typeProperty.value === typePropertyOpts.LAND"></i>
+                    </div>
                     <h4>TERRENOS</h4>
                 </div>
             </div>
@@ -21,13 +37,17 @@
     <div class="col-6">
         <div class="flex align-items-center">
             <div class="col-6 flex justify-content-center">
-                <p-selectButton [options]="buySellOpts" [(ngModel)]="selectedOpt" class="pb-2"></p-selectButton>
+                <p-selectButton
+                    [options]="buySellOpts"
+                    optionValue="id"
+                    formControlName="typeTransaction"
+                    class="pb-2"></p-selectButton>
             </div>
             <div class="col-6">
                 <p-autoComplete
                     placeholder="Agrega ubicación"
+                    (completeMethod)="searchLocations($event)"
                     class="select-search"
-                    [(ngModel)]="locationValue"
                     [suggestions]="filteredLocations"
                     field="name"
                     [dropdown]="true">
@@ -38,9 +58,9 @@
             <div class="col-6">
                 <p-autoComplete
                     placeholder="Filtros"
+                    (completeMethod)="searchFilters($event)"
                     class="select-search"
-                    [(ngModel)]="locationValue"
-                    [suggestions]="filteredLocations"
+                    [suggestions]="filteredFilters"
                     field="name"
                     [dropdown]="true">
                 </p-autoComplete>
@@ -49,8 +69,8 @@
                 <p-autoComplete
                     placeholder="Ordernar por"
                     class="select-search"
-                    [(ngModel)]="locationValue"
-                    [suggestions]="filteredLocations"
+                    (completeMethod)="searchOrders($event)"
+                    [suggestions]="filteredOrder"
                     field="name"
                     [dropdown]="true">
                 </p-autoComplete>

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { LocationInput, Property, PropertyLocationCreateInput } from '../../../api/houseMatch.api';
+import { FileParameter, LocationInput, Property, PropertyLocationCreateInput } from '../../../api/houseMatch.api';
 import { LocationApiService } from '../../../shared/services/location-service.service';
 import { MediaApiService } from '../../../shared/services/media-api.service';
 import { PropertyApiService } from '../api/property-api.service';
@@ -68,12 +68,12 @@ export class PropertyDialogComponent implements OnInit {
         // });
     }
     onSaveProperty(message: string) {
-        // console.log(this.file);
-        // const fileParameter = new FormData();
-        // const blob = new Blob([this.file], { type: this.file.type });
-        // fileParameter.append('fileUpload', blob, this.file.name);
         if (this.file) {
-            this.mediaApiService.createMediaFoo(this.file).subscribe((media) => {
+            const curFile: FileParameter = {
+                data: this.file,
+                fileName: this.file.name,
+            };
+            this.mediaApiService.createMedia(curFile).subscribe((media) => {
                 if (media?.id) {
                     const property: PropertyLocationCreateInput = this.formProperty
                         .value as PropertyLocationCreateInput;
@@ -85,6 +85,20 @@ export class PropertyDialogComponent implements OnInit {
             });
         }
     }
+    // onSaveProperty(message: string) {
+    //     if (this.file) {
+    //         this.mediaApiService.createMediaFoo(this.file).subscribe((media) => {
+    //             if (media?.id) {
+    //                 const property: PropertyLocationCreateInput = this.formProperty
+    //                     .value as PropertyLocationCreateInput;
+    //                 const location: LocationInput = this.formLocation.value as LocationInput;
+    //                 property.location = location;
+    //                 this.propertyApiService.createPropertyWithMedia(property, media.id);
+    //                 this.onCloseDialog(message);
+    //             }
+    //         });
+    //     }
+    // }
     onCloseDialog(message?: string) {
         this.dynamicDialogRef.close(message);
     }

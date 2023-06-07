@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from 'primeng/button';
 import { DataViewModule } from 'primeng/dataview';
@@ -25,6 +25,7 @@ import { SearchesRoutingModule } from './searches-routing.module';
         ButtonModule,
         DataViewModule,
         RatingModule,
+        ReactiveFormsModule,
     ],
 })
 export class SearchesModule {}
