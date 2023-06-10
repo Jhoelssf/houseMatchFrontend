@@ -380,43 +380,12 @@ export class HouseMatch implements IHouseMatch {
         this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : 'http://localhost:8080/v1';
     }
 
-    loginFoo(body: Login, httpContext?: HttpContext): Observable<Token> {
-        let url_ = this.baseUrl + '/users/login';
-        url_ = url_.replace(/[?&]$/, '');
-
-        const content_ = JSON.stringify(body);
-
-        let options_: any = {
-            body: content_,
-            observe: 'response',
-            responseType: 'blob',
-            context: httpContext,
-            headers: new HttpHeaders({
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-            }),
-        };
-
-        return this.http.post(url_, content_, options_).pipe(
-            _observableMergeMap((response_: any) => {
-                return blobToText(response_).pipe(
-                    _observableMergeMap((_responseText: string) => {
-                        let result201: any = null;
-                        result201 =
-                            _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Token);
-                        return _observableOf(result201);
-                    })
-                );
-            })
-        );
-    }
-
     /**
      * Login
      * @param body Cuerpo del mensaje para acceder al sistema.
      * @return OK
      */
-    login(body: Login, httpContext?: HttpContext): Observable<Token> {
+    login(body: Login, httpContext?: HttpContext): Observable<any> {
         let url_ = this.baseUrl + '/users/login';
         url_ = url_.replace(/[?&]$/, '');
 
@@ -428,7 +397,6 @@ export class HouseMatch implements IHouseMatch {
             responseType: 'blob',
             context: httpContext,
             headers: new HttpHeaders({
-                'Content-Type': 'application/json',
                 Accept: 'application/json',
             }),
         };
@@ -523,7 +491,6 @@ export class HouseMatch implements IHouseMatch {
         formData.append('fileUpload', file);
         return this.http.post('http://167.71.53.173:8080/v1/media/upload', formData);
     }
-
     /**
      * upload multimedia
      * @param fileUpload (optional)

@@ -32,6 +32,8 @@ export class AuthChildGuard implements CanActivateChild, CanLoad {
     }
 
     userHasToken(): boolean {
+        console.log(123);
+
         const currentUser: Token = this.authenticationService.currentUser;
         // const isValidToken = this.authenticationService.isValidToken();
         if (currentUser?.token) {

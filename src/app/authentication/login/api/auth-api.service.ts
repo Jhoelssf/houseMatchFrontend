@@ -19,9 +19,10 @@ export class AuthApiService {
     }
 
     login(body: Login): void {
-        this.houseMatchApi.login(body).subscribe((tokenStr: any) => {
-            const token: Token = JSON.parse(tokenStr);
-            this.currentUser = token;
+        this.houseMatchApi.login(body).subscribe((tokenObj: any) => {
+            console.log(tokenObj);
+            this.currentUser = tokenObj.token ? tokenObj : { token: '' };
+            console.log(this.currentUser);
 
             if (this.currentUser?.token) {
                 localStorage.setItem('token', this.currentUser.token);

@@ -3,6 +3,7 @@ import { RouterModule } from '@angular/router';
 import { NotfoundComponent } from './demo/components/notfound/notfound.component';
 import { LayoutHouseMatchComponent } from './house-match/layout-house-match/layout-house-match/layout-house-match.component';
 import { AppLayoutComponent } from './layout/app.layout.component';
+import { AuthChildGuard } from './shared/pipes/auth-child.guard';
 
 @NgModule({
     imports: [
@@ -22,6 +23,7 @@ import { AppLayoutComponent } from './layout/app.layout.component';
                 {
                     path: 'admin',
                     component: AppLayoutComponent,
+                    canActivateChild: [AuthChildGuard],
                     children: [
                         {
                             path: '',
