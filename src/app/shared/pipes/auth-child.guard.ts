@@ -1,14 +1,5 @@
 import { Injectable } from '@angular/core';
-import {
-    ActivatedRouteSnapshot,
-    CanActivateChild,
-    CanLoad,
-    Route,
-    Router,
-    RouterStateSnapshot,
-    UrlSegment,
-    UrlTree,
-} from '@angular/router';
+import { ActivatedRouteSnapshot, Route, Router, RouterStateSnapshot, UrlSegment, UrlTree } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Token } from '../../api/houseMatch.api';
 import { AuthApiService } from '../../authentication/login/api/auth-api.service';
@@ -16,7 +7,7 @@ import { AuthApiService } from '../../authentication/login/api/auth-api.service'
 @Injectable({
     providedIn: 'root',
 })
-export class AuthChildGuard implements CanActivateChild, CanLoad {
+export class AuthChildGuard  {
     constructor(private router: Router, private authenticationService: AuthApiService) {}
     canActivateChild(
         childRoute: ActivatedRouteSnapshot,

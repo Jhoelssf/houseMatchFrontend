@@ -118,7 +118,6 @@
       }
     }
   },
-  "defaultProject": "sakai-ng",
   "cli": {
     "analytics": false,
     "schematicCollections": [
