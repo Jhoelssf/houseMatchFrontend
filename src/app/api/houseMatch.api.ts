@@ -436,13 +436,13 @@ export class HouseMatch implements IHouseMatch {
                 _headers[key] = response.headers.get(key);
             }
         }
-        if (status === 201) {
+        if (status === 200) {
             return blobToText(responseBlob).pipe(
                 _observableMergeMap((_responseText: string) => {
-                    let result201: any = null;
-                    result201 =
+                    let result200: any = null;
+                    result200 =
                         _responseText === '' ? null : (JSON.parse(_responseText, this.jsonParseReviver) as Token);
-                    return _observableOf(result201);
+                    return _observableOf(result200);
                 })
             );
         } else if (status === 400) {

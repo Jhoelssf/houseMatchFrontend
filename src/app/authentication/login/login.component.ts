@@ -19,6 +19,7 @@ import { AuthApiService } from './api/auth-api.service';
     ],
 })
 export class LoginComponent implements OnInit, OnDestroy {
+    loading = false;
     formAuth: FormGroup = new FormGroup({
         email: new FormControl(''),
         password: new FormControl(''),
@@ -40,11 +41,13 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
     ngOnInit(): void {
         this.authApiService.currentUser$.pipe(takeUntil(this.unsubscribe$)).subscribe((token) => {
+            this.loading = false;
             console.log(token);
         });
     }
 
     onLogin() {
+        this.loading = true;
         this.authApiService.login({
             email: this.validateEmail(this.email.value) ? this.email.value : undefined,
             user: !this.validateEmail(this.email.value) ? this.email.value : undefined,

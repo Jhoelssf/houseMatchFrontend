@@ -1,4 +1,5 @@
 import { HashLocationStrategy, LocationStrategy } from '@angular/common';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { environment } from '../environments/environment';
 import { API_BASE_URL } from './api/houseMatch.api';
@@ -14,6 +15,7 @@ import { PhotoService } from './demo/service/photo.service';
 import { ProductService } from './demo/service/product.service';
 import { LayoutHouseMatchModule } from './house-match/layout-house-match/layout-house-match.module';
 import { AppLayoutModule } from './layout/app.layout.module';
+import { JwtInterceptor } from './shared/interceptors/jwt';
 
 @NgModule({
     declarations: [AppComponent, NotfoundComponent],
@@ -28,6 +30,7 @@ import { AppLayoutModule } from './layout/app.layout.module';
         PhotoService,
         ProductService,
         { provide: API_BASE_URL, useValue: environment.apiBaseUrl },
+        { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     ],
     bootstrap: [AppComponent],
 })

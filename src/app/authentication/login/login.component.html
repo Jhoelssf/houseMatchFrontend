@@ -46,9 +46,10 @@
                         pButton
                         pRipple
                         label="Sign In"
+                        [icon]="loading ? 'pi pi-spin pi-spinner' : ''"
                         (click)="onLogin()"
-                        class="w-full p-3 text-xl"
-                        [routerLink]="['/']"></button>
+                        [disabled]="loading"
+                        class="w-full p-3 text-xl"></button>
                     <button
                         pButton
                         pRipple
