@@ -1,0 +1,15 @@
+<p-accordion>
+    <p-accordionTab header="{{ headerTitle }}" [selected]="true" class="line-height-3 m-0">
+        <div class="flex justify-content-between">
+            <ng-container *ngFor="let item of infoCompare">
+                <div class="col-4 p-0">
+                    <div *ngFor="let subItem of item?.itemSubList" class="py-1">
+                        <span>
+                            {{ subItem.text }}
+                        </span>
+                    </div>
+                </div>
+            </ng-container>
+        </div>
+    </p-accordionTab>
+</p-accordion>

@@ -1,24 +1,107 @@
-<div class="flex justify-content-between align-items-center">
-    <div class="col-6">
+<div
+    class="flex justify-content-between align-items-center px-4"
+    style="border: 1px solid #2065d1; border-radius: 10px">
+    <div class="col-12">
         <div class="card-select p-3">
-            <h1 class="text-center">TIPOS DE PROPIEDAD</h1>
-            <div class="flex justify-content-around align-items-center pt-4">
-                <div class="text-center">
-                    <div><i class="pi pi-home card-select" style="font-size: 4rem; padding: 0.2em"></i></div>
-                    <h4>CASAS</h4>
+            <h5>¿Donde quieres vivir?</h5>
+            <div>
+                <div class="p-inputgroup">
+                    <span class="p-inputgroup-addon"><i class="pi pi-user"></i></span>
+                    <input type="text" pInputText placeholder="Username" />
                 </div>
-                <div class="text-center">
-                    <div><i class="pi pi-building card-select" style="font-size: 4rem; padding: 0.2em"></i></div>
-                    <h4>DEPARTAMENTOS</h4>
+            </div>
+            <h5>Tipos de propiedad</h5>
+            <div class="flex justify-content-around align-items-center">
+                <div class="text-center flex-1" (click)="select('Departamentos')">
+                    <div [ngClass]="{ selected: selected === 'Departamentos' }">
+                        <i class="pi pi-building card-select icon_search"></i>
+                    </div>
+                    <span [ngClass]="{ selected: selected === 'Departamentos' }">Departamentos</span>
                 </div>
-                <div class="text-center">
-                    <div><i class="pi pi-sitemap card-select" style="font-size: 4rem; padding: 0.2em"></i></div>
-                    <h4>TERRENOS</h4>
+                <div class="text-center flex-1" (click)="select('Casas')">
+                    <div [ngClass]="{ selected: selected === 'Casas' }">
+                        <i class="pi pi-home card-select icon_search"></i>
+                    </div>
+                    <span [ngClass]="{ selected: selected === 'Casas' }">Casas</span>
                 </div>
+                <div class="text-center flex-1" (click)="select('Terrenos')">
+                    <div [ngClass]="{ selected: selected === 'Terrenos' }">
+                        <i class="pi pi-sitemap card-select icon_search"></i>
+                    </div>
+                    <span [ngClass]="{ selected: selected === 'Terrenos' }">Terrenos</span>
+                </div>
+            </div>
+            <h5>Estado de propiedad</h5>
+            <div class="grid formgrid flex-column">
+                <div class="col-12">
+                    <div class="field-checkbox">
+                        <p-checkbox name="group1" value="planification" [(ngModel)]="selectedType" id="ny"></p-checkbox>
+                        <label for="ny">En planificacion</label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field-checkbox">
+                        <p-checkbox name="group1" value="building" [(ngModel)]="selectedType" id="sf"></p-checkbox>
+                        <label for="sf">En construccion</label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field-checkbox">
+                        <p-checkbox name="group1" value="buildedDone" [(ngModel)]="selectedType" id="la"></p-checkbox>
+                        <label for="la">Obra terminada</label>
+                    </div>
+                </div>
+            </div>
+            <h5>Accion</h5>
+            <p-selectButton [options]="buySellOpts" [(ngModel)]="selectedOpt" optionLabel="name"></p-selectButton>
+            <h5>Rango de precio</h5>
+            <div class="flex justify-content-between my-5" style="gap: 24px">
+                <span class="p-float-label col-6 p-0">
+                    <input type="text" pInputText [(ngModel)]="priceRange[0]" readonly class="w-100" />
+                    <label for="float-input">Minimo $</label>
+                </span>
+                <span class="p-float-label col-6 p-0">
+                    <input type="text" pInputText [(ngModel)]="priceRange[1]" readonly class="w-100" />
+                    <label for="float-input">Maximo $</label>
+                </span>
+            </div>
+            <p-slider [(ngModel)]="priceRange" [max]="1000000" [range]="true"></p-slider>
+            <h5>Area</h5>
+            <div class="flex justify-content-between my-5" style="gap: 24px">
+                <span class="p-float-label col-6 p-0">
+                    <input type="text" pInputText [(ngModel)]="areaRange[0]" readonly class="w-100" />
+                    <label for="float-input">Minimo m2</label>
+                </span>
+                <span class="p-float-label col-6 p-0">
+                    <input type="text" pInputText [(ngModel)]="areaRange[1]" readonly class="w-100" />
+                    <label for="float-input">Maximo m2</label>
+                </span>
+            </div>
+            <p-slider [(ngModel)]="areaRange" [max]="10000" [range]="true"></p-slider>
+            <h5>Ambientes</h5>
+            <ng-container *ngFor="let item of increaseItems">
+                <div class="my-2">
+                    <app-increase-filter [title]="item.title" [value]="item.value"></app-increase-filter>
+                </div>
+            </ng-container>
+            <div class="col-12 px-0">
+                <button
+                    pButton
+                    pRipple
+                    [style]="{
+                        'background-color': '#2c2c2c',
+                        'border-color': '#2c2c2c',
+                        width: '100%'
+                    }"
+                    icon="pi pi-trash"
+                    [iconPos]="'left'"
+                    type="button"
+                    label="Limpiar filtros"
+                    class="p-button-raised px-4 flex justify-content-center"></button>
             </div>
         </div>
     </div>
-    <div class="col-6">
+    <!-- <div class="col-6">
         <div class="flex align-items-center">
             <div class="col-6 flex justify-content-center">
                 <p-selectButton [options]="buySellOpts" [(ngModel)]="selectedOpt" class="pb-2"></p-selectButton>
@@ -59,5 +142,5 @@
         <div class="flex justify-content-end col-12">
             <button pButton icon="pi pi-search" class="p-button-outlined"></button>
         </div>
-    </div>
+    </div> -->
 </div>

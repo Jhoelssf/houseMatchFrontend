@@ -1,11 +1,32 @@
 <p-carousel
     [value]="products"
-    [numVisible]="3"
-    [numScroll]="3"
+    [numVisible]="4"
+    [numScroll]="4"
     [circular]="false"
     [responsiveOptions]="carouselResponsiveOptions">
     <ng-template let-product pTemplate="item">
-        <div class="border-round m-2 text-center p-2" style="border: 1px solid var(--surface-d)">
+        <div class="card-test">
+            <img class="card__image" src="assets/demo/images/product/{{ product.image }}" [alt]="product.name" />
+            <div class="p-3">
+                <h2 class="card__title">Departamento de 200m2</h2>
+                <h2 class="card__title text-primary">USD$ 152,000</h2>
+                <p class="card__text text-clamp">
+                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero pariatur debitis quo doloremque
+                    laborum deleniti quidem, nemo corporis excepturi nihil dicta quibusdam quos laudantium delectus
+                    iusto, accusantium beatae rerum dolor!
+                </p>
+                <div class="flex" style="gap: 25px">
+                    <app-icon-text icon="pi-car" text="200m2 total"></app-icon-text>
+                    <app-icon-text icon="pi-car" text="6 dorm."></app-icon-text>
+                    <app-icon-text icon="pi-car" text="4 banos"></app-icon-text>
+                </div>
+                <!-- divider  -->
+                <div class="card__footer mt-3 pt-3" style="border-top: 1px dashed #000">
+                    <button pButton pRipple type="button" label="Analizar" class="p-button-raised"></button>
+                </div>
+            </div>
+        </div>
+        <!-- <div class="border-round m-2 text-center p-2" style="border: 1px solid var(--surface-d)">
             <div class="my-5">
                 <img
                     src="assets/demo/images/product/{{ product.image }}"
@@ -29,6 +50,15 @@
                     <button pButton pRipple icon="pi pi-cog" class="p-button-rounded p-button-info"></button>
                 </div>
             </div>
-        </div>
+        </div> -->
     </ng-template>
 </p-carousel>
+
+<!-- <div>
+    <div class="card-test">
+        <img class="card__image" src="image.jpg" alt="Imagen del card" />
+        <h2 class="card__title">Título del card</h2>
+        <p class="card__text">Texto del card</p>
+        <p class="card__footer">Pie del card</p>
+    </div>
+</div> -->

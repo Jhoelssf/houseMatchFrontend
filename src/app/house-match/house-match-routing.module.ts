@@ -20,6 +20,15 @@ const routes: Routes = [
         path: 'agent',
         loadChildren: () => import('./agent/agent.module').then((m) => m.AgentModule),
     },
+    {
+        path: 'comparator',
+        loadChildren: () =>
+            import('./compare-properties/compare-properties.module').then((m) => m.ComparePropertiesModule),
+    },
+    {
+        path: 'details/:id',
+        loadChildren: () => import('./details-property/details-property.module').then((m) => m.DetailsPropertyModule),
+    },
 ];
 
 @NgModule({

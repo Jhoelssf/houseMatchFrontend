@@ -1,37 +1,15 @@
 <div class="py-4">
-    <h1 class="text-center">Te acompañamos en el todo el proceso</h1>
-    <div class="col-12 flex justify-content-center align-items-center">
-        <div>
-            <img
-                style="object-fit: cover; width: 100%"
-                src="assets/layout/images/house-match-home/1-search-g.gif"
-                alt="" />
-            <h1 class="text-center">BUSCA</h1>
-        </div>
-        <div>
-            <img
-                style="object-fit: cover; width: 100%"
-                src="assets/layout/images/house-match-home/2-encuentra-g.gif"
-                alt="" />
-            <h1 class="text-center">ENCUENTRA</h1>
-        </div>
-        <div>
-            <img
-                style="object-fit: cover; width: 100%"
-                src="assets/layout/images/house-match-home/3-radio-g.gif"
-                alt="" />
-            <h1 class="text-center">COMPRA</h1>
-        </div>
-        <div>
-            <img
-                style="object-fit: cover; width: 100%"
-                src="assets/layout/images/house-match-home/4-house-g.gif"
-                alt="" />
-            <h1 class="text-center">DISFRUTA</h1>
+    <h1 class="text-center home_title">Te acompañamos en el todo el proceso</h1>
+    <h5 class="text-center">Tu socio en el camino hacia tu nuevo hogar: ¡Acompañandote en cada paso!</h5>
+    <div class="col-12 flex justify-content-center align-items-center" style="padding: 4rem 25rem">
+        <div *ngFor="let item of items" class="flex flex-column justify-content-center align-items-center">
+            <img class="img_home_process" [src]="item.url" alt="" />
+            <h4>{{ item.title }}</h4>
+            <p>Lorem ipsum dolor sit amet</p>
         </div>
     </div>
 </div>
-<div class="mb-4 flex justify-content-center align-items-center" style="padding: 0 8em">
+<!-- <div class="mb-4 flex justify-content-center align-items-center" style="padding: 0 8em">
     <div
         style="background: rgb(255, 138, 132); border-radius: 25px"
         class="col-6 flex justify-content-between p-4 mr-6">
@@ -67,4 +45,4 @@
     <h1>¿Eres agente inmobiliario?</h1>
     <h2>Crea una cuenta y empieza a conectar con más</h2>
     <button pButton pRipple type="button" style="font-size: 30px" label="CREAR MI PERFIL DE AGENTE"></button>
-</div>
+</div> -->

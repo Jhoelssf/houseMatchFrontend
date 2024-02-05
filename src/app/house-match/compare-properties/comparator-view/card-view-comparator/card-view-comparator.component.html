@@ -1,0 +1,23 @@
+<div class="grid card shadow-1 mt-4 mx-0 p-0">
+    <div style="height: 230px" class="w-100">
+        <img
+            width="100%"
+            style="border-radius: 15px; object-fit: cover; height: 100%"
+            src="https://via.placeholder.com/150"
+            alt="img" />
+    </div>
+    <div class="p-4">
+        <h5>
+            {{ title }}
+        </h5>
+        <div class="flex justify-content-end w-100">
+            <button
+                pButton
+                pRipple
+                type="button"
+                (click)="onGoToDetailsProperty()"
+                label="Ver propiedad >"
+                class="p-button-outlined px-4 flex justify-content-center"></button>
+        </div>
+    </div>
+</div>

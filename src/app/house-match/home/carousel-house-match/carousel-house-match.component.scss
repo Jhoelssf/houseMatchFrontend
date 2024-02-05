@@ -1,0 +1,38 @@
+.card-test {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    margin: 10px;
+}
+
+.card__image {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+
+.card__title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.card__text {
+    font-size: 14px;
+}
+
+.card__footer {
+    text-align: right;
+}
+.card__icon-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #b3b3b3;
+    // background-color: #000;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+}

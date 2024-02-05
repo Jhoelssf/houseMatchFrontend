@@ -1,0 +1,26 @@
+<div class="surface-card shadow-2 py-4">
+    <p-carousel
+        [value]="posts"
+        [numVisible]="2"
+        [numScroll]="2"
+        [circular]="false"
+        [responsiveOptions]="carouselResponsiveOptions">
+        <ng-template let-item pTemplate="item">
+            <div class="flex">
+                <img class="card__image" src="{{ item.url }}" [alt]="item.title" />
+                <div class="px-6 py-3 flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card__title text-primary">Principal</h5>
+                        <h2 class="card__title">{{ item.title }}</h2>
+                        <p class="card__text">
+                            {{ item.content }}
+                        </p>
+                    </div>
+                    <div class="card__footer mt-3 pt-3 flex justify-content-end">
+                        <button pButton pRipple type="button" label="Conocer mas >" class="p-button-raised"></button>
+                    </div>
+                </div>
+            </div>
+        </ng-template>
+    </p-carousel>
+</div>

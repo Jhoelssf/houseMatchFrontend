@@ -15,3 +15,39 @@ $gutter: 1rem; //for primeflex grid system
 
 /*House match*/
 @import 'assets/layout/styles/housematch/form-styles.scss';
+
+:root {
+    --house-match-primary: #2065d1; /* primary color of house match application */
+}
+
+$sizes: 1px, 1em, 1rem;
+
+@for $i from 1 through 10 {
+    $value: $i * 10;
+
+    .w-#{$value} {
+        width: $value * 1%;
+    }
+
+    .h-#{$value} {
+        height: $value * 1%;
+    }
+    @each $size in $sizes {
+        .gap-#{$value}-#{str-slice(inspect($size), 3)} {
+            gap: $value * $size;
+        }
+        .fs-#{$i}-#{str-slice(inspect($size), 3)} {
+            font-size: $i * $size !important;
+        }
+    }
+}
+.text-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.home_title {
+    font-size: 3.3rem;
+}

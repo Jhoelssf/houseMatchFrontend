@@ -1,0 +1,26 @@
+<div class="w-100" style="background-color: white; padding: 0 16rem">
+    <div class="flex align-items-center">
+        <ng-container *ngFor="let item of [0, 0, 0]">
+            <div class="col-3">
+                <app-card-comparator></app-card-comparator>
+            </div>
+        </ng-container>
+        <div class="col-3 flex justify-content-end" style="gap: 8px">
+            <button
+                pButton
+                pRipple
+                type="button"
+                label="Cerrar"
+                class="p-button-outlined px-4 flex justify-content-center"></button>
+            <button
+                pButton
+                pRipple
+                icon="pi pi-file"
+                [iconPos]="'left'"
+                (click)="onGoToCompare()"
+                type="button"
+                label="Comparar"
+                class="p-button-raised px-4 flex justify-content-center"></button>
+        </div>
+    </div>
+</div>

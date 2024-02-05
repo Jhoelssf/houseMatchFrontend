@@ -1,12 +1,51 @@
-.tel {
-    width: fit-content;
-    display: flex;
-    border: solid 1px #ff8a84;
-    border-radius: 5rem;
-    padding: 8px 14px;
-    font-size: 2rem;
+.footer {
+    width: 100%;
 }
-a {
-    cursor: pointer;
-    width: fit-content;
+
+.header {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #999999;
+    padding: 0 16rem;
+}
+
+.logo {
+    height: 30px;
+    /* Asegúrate de cambiar la ruta a la del logo */
+    background-image: url('/path/to/logo.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+.main-content {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 16rem;
+}
+
+.main-content a {
+    padding-bottom: 8px;
+}
+
+.footer-content {
+    background-color: #2065d1;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 16rem;
+}
+
+.social-icons {
+    display: flex;
+    justify-content: space-around;
+    width: 100px;
+}
+
+.social-icons i {
+    color: white;
+}
+.link_footer {
+    color: #999999;
 }

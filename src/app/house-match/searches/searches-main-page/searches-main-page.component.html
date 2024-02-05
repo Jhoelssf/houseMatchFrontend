@@ -1,5 +1,11 @@
-<div class="px-8">
-    <app-filters></app-filters>
+<div class="px-8 flex justify-content-between card">
+    <app-filters class="col-3"></app-filters>
     <hr />
-    <app-searches-list-properties></app-searches-list-properties>
+    <app-searches-list-properties (compare)="onCompare($event)"></app-searches-list-properties>
+</div>
+
+<app-agent-create-profile></app-agent-create-profile>
+
+<div style="position: fixed; bottom: 0" class="w-100" [ngClass]="comparing ? 'shows' : 'hides'">
+    <app-comparator></app-comparator>
 </div>

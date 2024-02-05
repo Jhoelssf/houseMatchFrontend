@@ -1,7 +1,7 @@
 <div>
     <div
         style="
-            height: 20em;
+            height: calc(100vh - 5rem);
             width: 100%;
             background-image: url('assets/layout/images/crear-inmuebles-1.png');
             background-position: center;
@@ -10,48 +10,74 @@
             -o-background-size: cover;
             background-size: cover;
             position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: end;
+            padding: 0 30rem;
+            text-align: center;
         ">
-        <div style="position: absolute; top: 10%; left: 20px">
-            <div>
-                <h1>Tu decides como vender o comprar tu inmueble</h1>
-            </div>
-            <p style="font-size: 17px">Nuestra tecnologia y los mejores expertos del mercado lo harán por ti</p>
-        </div>
+        <div class="flex flex-column align-items-center justify-content-center h-100 gap-10-em">
+            <h1 class="text-white fs-4-em">Tu decides como vender o comprar tu inmueble</h1>
+            <p class="text-white" style="font-size: 1.5em">
+                Nuestra tecnologia y los mejores expertos del mercado lo harán por ti
+            </p>
 
-        <div style="display: flex; flex-direction: column; align-items: center">
-            <p-selectButton [options]="buySellOpts" [(ngModel)]="selectedOpt" class="pb-2"></p-selectButton>
-            <div class="pb-5" style="width: 500px">
-                <p-dropdown
-                    [options]="propertyType"
-                    [style]="{ width: '50%' }"
-                    [(ngModel)]="selectedType"
-                    placeholder="Tipo de inmueble"></p-dropdown>
-                <p-autoComplete
-                    [style]="{ width: '50%' }"
-                    [(ngModel)]="locationValue"
-                    [suggestions]="filteredCountries"
-                    (completeMethod)="filterLocation($event)"
-                    field="name"
-                    [dropdown]="true">
-                </p-autoComplete>
+            <div class="w-100">
+                <div class="pb-2">
+                    <p-selectButton [options]="buySellOpts" [(ngModel)]="selectedOpt"></p-selectButton>
+                </div>
+                <div class="card-searcher-home flex justify-content-center" style="gap: 10px">
+                    <div style="flex: 2 1 auto">
+                        <p-dropdown
+                            [style]="{ width: '100%' }"
+                            [options]="propertyType"
+                            [(ngModel)]="selectedType"
+                            placeholder="Tipo de inmueble"></p-dropdown>
+                    </div>
+                    <div>
+                        <!-- line vertical, divider -->
+                        <div style="height: 100%; width: 1px; background-color: #757575"></div>
+                    </div>
+                    <div style="flex: 2 1 auto">
+                        <p-autoComplete
+                            [style]="{ width: '100%' }"
+                            [(ngModel)]="locationValue"
+                            [suggestions]="filteredCountries"
+                            (completeMethod)="filterLocation($event)"
+                            field="name"
+                            [dropdown]="true">
+                        </p-autoComplete>
+                    </div>
+                    <div style="flex: 1 1 auto">
+                        <button
+                            pButton
+                            pRipple
+                            icon="pi pi-search"
+                            type="button"
+                            label="Buscar"
+                            class="p-button-raised px-4"></button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     <!-- Last properties section -->
-    <div class="py-4">
-        <h1 class="text-center">ULTIMAS PROPIEDADES</h1>
+    <div class="py-8">
+        <h1 class="text-center text-primary home_title">Ultimas Propiedades</h1>
+        <p class="text-center text-primary">Encuentra tu espacio perfecto, las ultimas propiedades en venta</p>
         <app-carousel-house-match></app-carousel-house-match>
     </div>
-    <div class="pb-4">
+    <div class="pb-8 pt-8">
         <app-show-media-section></app-show-media-section>
     </div>
-    <div class="pb-4">
+    <div class="pb-8 pt-8">
         <app-info-sell-buy></app-info-sell-buy>
     </div>
-    <div class="pb-4">
+    <div class="pb-8 pt-8">
         <app-keeping-section></app-keeping-section>
+    </div>
+    <div style="border-top: 1px dashed #a7a7a7" class="pt-8"></div>
+    <div class="pb-8 pt-8" style="padding: 0 20rem">
+        <app-carousel-about-more></app-carousel-about-more>
+    </div>
+    <div class="pt-8">
+        <app-agent-create-profile></app-agent-create-profile>
     </div>
 </div>

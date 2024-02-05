@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { SelectItem } from 'primeng/api';
 import { DataView } from 'primeng/dataview';
 import { Product } from '../../../demo/api/product';
@@ -14,6 +14,8 @@ export class SearchesListPropertiesComponent implements OnInit {
     sortField: string = '';
     sortOrder: number = 0;
     sortOptions: SelectItem[] = [];
+    orderBySelectValue: string | undefined;
+    @Output() compare: EventEmitter<boolean> = new EventEmitter();
 
     constructor(private productService: ProductService) {}
     ngOnInit(): void {

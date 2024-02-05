@@ -1,0 +1,60 @@
+<div class="grid card shadow-1 mt-4 mx-2">
+    <div class="col-12 md:col-4">
+        <img
+            src="/assets/layout/images/house-match-search/vivienda.png"
+            alt="Imagen del departamento"
+            class="shadow-2" />
+    </div>
+    <div class="col-12 md:col-8">
+        <div>
+            <div class="flex pb-2" style="gap: 4px">
+                <p-tag
+                    severity="success"
+                    [style]="{ 'background-color': '#b5ffc8', color: '#3ec760' }"
+                    value="Obra terminada"></p-tag>
+                <p-tag
+                    severity="success"
+                    [style]="{ 'background-color': '#e4e4e4', color: '#838383' }"
+                    value="Recorrido virtual"></p-tag>
+            </div>
+            <div class="pb-2">
+                <app-icon-text icon="pi-map-marker" text="Pueblo Libre, Lima"></app-icon-text>
+            </div>
+            <div>
+                <h4>Departamento de 200m2</h4>
+            </div>
+            <div>
+                <p>
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+                    et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+                    aliquip ex ea commodo consequat.
+                </p>
+                <div class="flex" style="gap: 25px">
+                    <app-icon-text icon="pi-car" text="200m2 total"></app-icon-text>
+                    <app-icon-text icon="pi-car" text="6 dorm."></app-icon-text>
+                    <app-icon-text icon="pi-car" text="4 banos"></app-icon-text>
+                </div>
+                <h4 class="text-primary">USD$ 152,000</h4>
+                <div class="flex justify-content-end" style="gap: 4px">
+                    <button
+                        pButton
+                        pRipple
+                        icon="pi pi-map-marker"
+                        [iconPos]="'left'"
+                        type="button"
+                        label="Comparar"
+                        (click)="compareItem.emit()"
+                        class="p-button-outlined px-4 flex justify-content-center"></button>
+                    <button
+                        pButton
+                        pRipple
+                        icon="pi pi-map-marker"
+                        [iconPos]="'left'"
+                        type="button"
+                        label="Ver más"
+                        class="p-button-raised px-4 flex justify-content-center"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

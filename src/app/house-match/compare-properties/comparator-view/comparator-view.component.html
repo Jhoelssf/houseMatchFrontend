@@ -1,0 +1,23 @@
+<div class="flex justify-content-between flex-column">
+    <div style="padding: 0 16rem">
+        <div style="gap: 16px" class="flex pb-4">
+            <ng-container *ngFor="let item of itemsToCompare">
+                <div class="col-4 p-0">
+                    <app-card-view-comparator [title]="item?.title"></app-card-view-comparator>
+                </div>
+            </ng-container>
+        </div>
+        <ng-container *ngFor="let item of itemsToCompareDetails">
+            <div class="pb-3">
+                <app-comparator-view-details
+                    [headerTitle]="item.headerTitle"
+                    [infoCompare]="item.infoCompare"></app-comparator-view-details>
+            </div>
+        </ng-container>
+    </div>
+    <div class="p-8">
+        <h2 class="pl-8">Otras propiedades que podrian interesarte</h2>
+        <app-carousel-house-match></app-carousel-house-match>
+    </div>
+    <app-agent-create-profile></app-agent-create-profile>
+</div>

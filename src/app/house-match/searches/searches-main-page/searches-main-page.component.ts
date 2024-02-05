@@ -6,5 +6,11 @@ import { Component } from '@angular/core';
     styleUrls: ['./searches-main-page.component.scss'],
 })
 export class SearchesMainPageComponent {
+    comparing = false;
     constructor() {}
+
+    onCompare(e: any) {
+        console.log('Comparing');
+        this.comparing = !this.comparing;
+    }
 }

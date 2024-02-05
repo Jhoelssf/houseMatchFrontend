@@ -1,4 +1,4 @@
-<div class="layout-topbar">
+<div class="layout-topbar" style="padding: 0 12rem">
     <a class="layout-topbar-logo" routerLink="">
         <img src="assets/layout/images/angular-3-logo.png" alt="logo" />
         <span>HOUSE MATCH</span>
@@ -19,7 +19,7 @@
         #topbarmenu
         class="layout-topbar-menu menu-housematch"
         [ngClass]="{ 'layout-topbar-menu-mobile-active': layoutService.state.profileSidebarVisible }">
-        <button pButton pRipple type="button" [routerLink]="['/home']" label="Home" class="p-button-text mx-2"></button>
+        <button pButton pRipple type="button" [routerLink]="['/home']" label="Inicio" class="p-button-text mx-2"></button>
         <button
             pButton
             pRipple
@@ -34,6 +34,17 @@
             [routerLink]="['/agent']"
             label="Soy agente"
             class="p-button-text mx-2"></button>
+        <button
+            pButton
+            pRipple
+            type="button"
+            [routerLink]="['/agent']"
+            label="Acerca de nosotros"
+            class="p-button-text mx-2"></button>
+        <button
+            pButton
+            label="Iniciar sesion"
+            class="p-button-outlined"></button>
         <!-- <button class="p-link layout-topbar-button">
             <i class="pi pi-calendar"></i>
             <span>Calendar</span>

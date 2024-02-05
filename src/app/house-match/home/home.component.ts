@@ -12,7 +12,7 @@ export class HomeComponent implements OnInit {
     buySellOpts = ['Comprar', 'Alquilar'];
     propertyType = ['Casa', 'Departamento'];
     selectedType = null;
-    selectedOpt = null;
+    selectedOpt = 'Comprar';
     locationValue = null;
     constructor(private countryService: CountryService) {}
 
