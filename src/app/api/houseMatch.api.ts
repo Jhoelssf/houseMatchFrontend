@@ -489,7 +489,7 @@ export class HouseMatch implements IHouseMatch {
     uploadMediaFoo(file: File): Observable<any> {
         const formData = new FormData();
         formData.append('fileUpload', file);
-        return this.http.post('http://167.71.53.173:8080/v1/media/upload', formData);
+        return this.http.post('http://164.90.159.4:8080/v1/media/upload', formData);
     }
     /**
      * upload multimedia
